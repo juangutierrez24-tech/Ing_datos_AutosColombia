@@ -1,0 +1,25 @@
+<div class="demo-notice">Datos ficticios para demostración visual. No representan operaciones guardadas.</div>
+<div class="welcome">
+  <div><p class="eyebrow">Resumen operativo</p><h2>Buenos días, Carolina</h2><p>Este es el estado del parqueadero en este momento.</p></div>
+  <div class="quick-actions"><a class="button" routerLink="/entrada"><svg lucideLogIn></svg> Registrar entrada</a><a class="button secondary" routerLink="/salida"><svg lucideLogOut></svg> Registrar salida</a></div>
+</div>
+<div class="stats">
+  @for (stat of stats; track stat.title) {
+    <article class="stat"><div class="stat-icon {{ stat.tone }}">
+      @switch (stat.icon) {
+        @case ("car") { <svg lucideCar></svg> }
+        @case ("parking") { <svg lucideCircleParking></svg> }
+        @case ("check") { <svg lucideCheck></svg> }
+        @case ("login") { <svg lucideLogIn></svg> }
+        @case ("logout") { <svg lucideLogOut></svg> }
+      }
+    </div><p>{{ stat.title }}</p><strong>{{ stat.value }}</strong><small>{{ stat.hint }}</small></article>
+  }
+</div>
+<section class="card table-card">
+  <div class="section-head"><div><h3>Últimas estancias</h3><p>Movimientos ficticios recientes</p></div><a class="text-button" routerLink="/historial">Ver historial <svg lucideChevronRight></svg></a></div>
+  <div class="table-wrap"><table><thead><tr><th>Placa</th><th>Vehículo</th><th>Celda</th><th>Hora de entrada</th><th>Estado</th><th></th></tr></thead><tbody>
+    @for (row of stays; track row[0]) { <tr><td><b class="plate">{{ row[0] }}</b></td><td>{{ row[1] }}</td><td><b>{{ row[2] }}</b></td><td>{{ row[3] }}</td><td><app-status-badge [tone]="row[4] === 'Dentro' ? 'green' : 'gray'">{{ row[4] }}</app-status-badge></td><td><button class="icon-button" aria-label="Más opciones"><svg lucideMoreHorizontal></svg></button></td></tr> }
+  </tbody></table></div>
+  <div class="table-foot"><span>Mostrando 5 movimientos ficticios</span><a class="text-button" routerLink="/historial">Ver todos <svg lucideChevronRight></svg></a></div>
+</section>
