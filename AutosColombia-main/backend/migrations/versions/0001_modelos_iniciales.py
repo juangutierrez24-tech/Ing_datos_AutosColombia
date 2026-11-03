@@ -29,6 +29,7 @@ def upgrade() -> None:
         sa.CheckConstraint("marca ~ '[^[:space:]]'", name="ck_vehiculo_marca_no_vacia"),
         sa.CheckConstraint("modelo BETWEEN 1 AND 9999", name="ck_vehiculo_modelo_anio"),
         sa.CheckConstraint("tipo IN ('MOTO', 'AUTOMOVIL', 'CAMIONETA')", name="ck_vehiculo_tipo"),
+        sa.CheckConstraint("placa ~ '^[A-Z]{3}[0-9]{3}$'", name="ck_vehiculo_placa_formato"),
     )
     op.create_table(
         "celda",

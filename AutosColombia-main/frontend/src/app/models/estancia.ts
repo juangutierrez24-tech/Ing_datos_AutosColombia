@@ -1,5 +1,6 @@
 import { Celda } from './celda';
 import { Vehiculo } from './vehiculo';
+import { Operador } from "./operador";
 
 export interface EntradaCrear {
   placa: string;
@@ -23,4 +24,16 @@ export interface EstadoVehiculo {
   vehiculo: Vehiculo;
   esta_dentro: boolean;
   estancia: (Estancia & { celda: Celda }) | null;
+}
+export interface EstanciaHistorial extends Estancia {
+  vehiculo: Vehiculo;
+  celda: Celda;
+  operador_entrada: Operador;
+  operador_salida: Operador | null;
+}
+export interface EstanciasPagina {
+  items: EstanciaHistorial[];
+  total: number;
+  offset: number;
+  limit: number;
 }

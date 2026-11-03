@@ -1,20 +1,184 @@
-<div class="demo-notice">Demostración local: confirmar no guarda información ni llama a una API.</div>
+
 <div class="flow-grid">
   <section class="card form-card">
-    <div class="step-title"><span>1</span><div><h3>Buscar vehículo</h3><p>Ingresa la placa sin espacios ni guiones.</p></div></div>
-    <div class="search-row"><label class="field"><span>Placa del vehículo</span><input [(ngModel)]="plate" maxlength="6" placeholder="Ej. ABC123" (keyup.enter)="search()" /></label><button class="button" (click)="search()"><svg lucideSearch></svg> Buscar</button></div>
-    @if (plate && !searched()) { <div class="error-box">Usa el formato válido: tres letras y tres números, por ejemplo ABC123.</div> }
-    @if (searched()) { <div class="success-box"><svg lucideCheck></svg><div><b>Vehículo encontrado en datos de ejemplo</b><p>Renault Duster 2022 · Gris · Camioneta</p></div><app-status-badge>Registrado</app-status-badge></div> }
-    <div class="step-content" [class.muted-step]="!searched()"><div class="step-title"><span>2</span><div><h3>Datos de la entrada</h3><p>Confirma la información y asigna una celda disponible.</p></div></div>
-      <div class="form-grid"><label class="field"><span>Marca</span><input value="Renault" [disabled]="!searched()" /></label><label class="field"><span>Modelo o año</span><input value="Duster 2022" [disabled]="!searched()" /></label><label class="field"><span>Color</span><input value="Gris" [disabled]="!searched()" /></label><label class="field"><span>Tipo de vehículo</span><select [disabled]="!searched()"><option>Camioneta</option></select></label><label class="field"><span>Celda disponible</span><select [disabled]="!searched()"><option>A-12 · Camioneta</option><option>B-03 · Automóvil</option></select></label><label class="field"><span>Operador responsable</span><select [disabled]="!searched()"><option>Carolina Ramírez</option></select></label></div>
+
+    <div class="step-title">
+      <span>1</span>
+      <div>
+        <h3>Buscar vehículo</h3>
+        <p>Ingresa la placa sin espacios ni guiones.</p>
+      </div>
     </div>
+
+    <div class="search-row">
+      <label class="field">
+        <span>Placa del vehículo</span>
+        <input
+          [(ngModel)]="plate"
+          maxlength="6"
+          placeholder="Ej. ABC123"
+          (keyup.enter)="search()"
+        />
+      </label>
+
+      <button
+        class="button"
+        (click)="search()"
+        [disabled]="searching()"
+      >
+        <svg lucideSearch></svg>
+        {{ searching() ? 'Buscando...' : 'Buscar' }}
+      </button>
+    </div>
+
+    @if (errorMessage()) {
+      <div class="error-box">{{ errorMessage() }}</div>
+    }
+
+    @if (successMessage()) {
+      <div class="success-box">
+        <svg lucideCheck></svg>
+        <div>
+          <b>Entrada registrada</b>
+          <p>{{ successMessage() }}</p>
+        </div>
+        <app-status-badge>Registrado</app-status-badge>
+      </div>
+    }
+
+    @if (catalogError()) {
+      <div class="error-box">{{ catalogError() }}</div>
+    }
+
+    @if (vehicle(); as v) {
+      <div class="success-box">
+        <svg lucideCheck></svg>
+        <div>
+          <b>Vehículo encontrado</b>
+          <p>{{ v.marca }} · {{ v.modelo }} · {{ v.color }}</p>
+        </div>
+        <app-status-badge>Registrado</app-status-badge>
+      </div>
+
+      <div class="step-content">
+        <div class="step-title">
+          <span>2</span>
+          <div>
+            <h3>Datos de la entrada</h3>
+            <p>Confirma la información y asigna una celda.</p>
+          </div>
+        </div>
+
+        <div class="form-grid">
+          <label class="field">
+            <span>Marca</span>
+            <input [value]="v.marca" disabled />
+          </label>
+
+          <label class="field">
+            <span>Modelo / año</span>
+            <input [value]="v.modelo" disabled />
+          </label>
+
+          <label class="field">
+            <span>Color</span>
+            <input [value]="v.color" disabled />
+          </label>
+
+          <label class="field">
+            <span>Tipo de vehículo</span>
+            <input [value]="v.tipo" disabled />
+          </label>
+
+          <label class="field">
+            <span>Celda</span>
+            <select [(ngModel)]="selectedCellId">
+              <option [ngValue]="null">Selecciona una celda</option>
+              @for (cell of cells(); track cell.id) {
+                <option [ngValue]="cell.id">
+                  {{ cell.codigo }} · {{ cell.tipo }}
+                </option>
+              }
+            </select>
+          </label>
+
+          <label class="field">
+            <span>Operador responsable</span>
+            <select [(ngModel)]="selectedOperatorId">
+              <option [ngValue]="null">Selecciona un operador</option>
+              @for (operator of operators(); track operator.id) {
+                <option [ngValue]="operator.id">
+                  {{ operator.nombre }}
+                </option>
+              }
+            </select>
+          </label>
+        </div>
+      </div>
+    }
   </section>
-  <aside class="card summary-card"><p class="eyebrow">Resumen de operación</p><h3>Nueva entrada</h3>
-    @if (searched()) {
-      <div class="vehicle-hero"><div class="car-tile"><svg lucideCar></svg></div><div><b class="plate large">{{ plate }}</b><p>Renault Duster 2022</p></div></div>
-      <dl><div><dt>Tipo</dt><dd>Camioneta</dd></div><div><dt>Color</dt><dd>Gris</dd></div><div><dt>Celda</dt><dd>A-12</dd></div><div><dt>Entrada</dt><dd>Hoy, 10:36</dd></div></dl>
-      <button class="button full" (click)="confirm()"><svg lucideCheck></svg> Confirmar entrada</button>
-      @if (confirmed()) { <div class="toast"><svg lucideCheck></svg><span><b>Simulación completada</b><small>No se guardaron datos.</small></span><button (click)="confirmed.set(false)" aria-label="Cerrar"><svg lucideX></svg></button></div> }
-    } @else { <div class="empty-mini"><svg lucideSearch></svg><b>Busca una placa para continuar</b><p>Aquí verás el resumen antes de confirmar.</p></div> }
+
+  <aside class="card summary-card">
+    <p class="eyebrow">Resumen de operación</p>
+    <h3>Nueva entrada</h3>
+
+    @if (vehicle(); as v) {
+      <div class="vehicle-hero">
+        <div class="car-tile">
+          <svg lucideCar></svg>
+        </div>
+
+        <div>
+          <b class="plate large">{{ v.placa }}</b>
+          <p>{{ v.marca }} {{ v.modelo }}</p>
+        </div>
+      </div>
+
+      <dl>
+        <div>
+          <dt>Tipo</dt>
+          <dd>{{ v.tipo }}</dd>
+        </div>
+        <div>
+          <dt>Color</dt>
+          <dd>{{ v.color }}</dd>
+        </div>
+        <div>
+          <dt>Celda</dt>
+          <dd>
+            @if (selectedCellId !== null) {
+              {{ cells().find(c => c.id === selectedCellId)?.codigo || 'Seleccionada' }}
+            } @else {
+              Sin seleccionar
+            }
+          </dd>
+        </div>
+        <div>
+          <dt>Operador</dt>
+          <dd>
+            @if (selectedOperatorId !== null) {
+              {{ operators().find(o => o.id === selectedOperatorId)?.nombre || 'Seleccionado' }}
+            } @else {
+              Sin seleccionar
+            }
+          </dd>
+        </div>
+      </dl>
+
+      <button
+        class="button full"
+        (click)="confirm()"
+        [disabled]="saving() || cells().length === 0 || operators().length === 0"
+      >
+        <svg lucideCheck></svg>
+        {{ saving() ? 'Guardando...' : 'Confirmar entrada' }}
+      </button>
+    } @else {
+      <div class="empty-mini">
+        <svg lucideSearch></svg>
+        <b>Busca una placa para continuar</b>
+        <p>Aquí verás los datos reales del vehículo antes de confirmar.</p>
+      </div>
+    }
   </aside>
 </div>

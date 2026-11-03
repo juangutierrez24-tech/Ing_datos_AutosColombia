@@ -1,5 +1,7 @@
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
+from sqlalchemy import text
+from app.database import get_engine
 
 from app.routers.vehiculos import router as vehiculos_router
 from app.services.vehiculo import VehiculoError
@@ -26,5 +28,21 @@ async def entity_error_handler(request, error: VehiculoError | CeldaError | Oper
 
 
 @app.get("/health")
-def health() -> dict[str, str]:
-    return {"status": "ok"}
+def health():
+    try:
+        with get_engine().connect() as connection:
+            connection.execute(text("SELECT 1"))
+
+        return {
+            "status": "ok",
+            "database": "connected"
+        }
+
+    except Exception:
+        return JSONResponse(
+            status_code=503,
+            content={
+                "status": "error",
+                "database": "disconnected"
+            }
+        )

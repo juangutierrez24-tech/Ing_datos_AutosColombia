@@ -1,10 +1,18 @@
-from typing import Annotated
+from datetime import date, datetime, time, timezone
+from typing import Annotated, Literal
+from zoneinfo import ZoneInfo
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 from app.database import get_session
-from app.schemas.estancia import EntradaCrear, SalidaCrear, EstanciaRespuesta, EstadoVehiculoRespuesta
+from app.schemas.estancia import (
+    EntradaCrear,
+    SalidaCrear,
+    EstanciaRespuesta,
+    EstadoVehiculoRespuesta,
+    EstanciasPagina,
+)
 from app.schemas.vehiculo import Placa
 from app.services.estancia import ServicioEstancia
 
@@ -25,3 +33,48 @@ def salida(data: SalidaCrear, session: DatabaseSession) -> EstanciaRespuesta:
 @router.get("/vehiculo/{placa}", response_model=EstadoVehiculoRespuesta)
 def consultar(placa: Placa, session: DatabaseSession) -> EstadoVehiculoRespuesta:
     return ServicioEstancia(session).consultar(placa)
+
+
+@router.get("/resumen")
+def resumen(session: DatabaseSession) -> dict:
+    return ServicioEstancia(session).resumen()
+
+
+@router.get("/historial", response_model=EstanciasPagina)
+def historial(
+    session: DatabaseSession,
+    placa: str | None = None,
+    desde: date | None = None,
+    hasta: date | None = None,
+    estado: Literal["todos", "abierta", "cerrada"] = "todos",
+    offset: Annotated[int, Query(ge=0)] = 0,
+    limit: Annotated[int, Query(ge=1, le=100)] = 10,
+) -> EstanciasPagina:
+
+    zona = ZoneInfo("America/Bogota")
+
+    desde_utc = (
+        datetime.combine(desde, time.min, tzinfo=zona).astimezone(timezone.utc)
+        if desde else None
+    )
+
+    hasta_utc = (
+        datetime.combine(hasta, time.max, tzinfo=zona).astimezone(timezone.utc)
+        if hasta else None
+    )
+
+    if desde and hasta and desde > hasta:
+        from fastapi import HTTPException
+        raise HTTPException(
+            status_code=422,
+            detail="La fecha inicial no puede ser posterior a la fecha final.",
+        )
+
+    return ServicioEstancia(session).historial(
+        placa=placa,
+        desde=desde_utc,
+        hasta=hasta_utc,
+        estado=estado,
+        offset=offset,
+        limit=limit,
+    )

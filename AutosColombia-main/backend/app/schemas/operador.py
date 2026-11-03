@@ -36,3 +36,4 @@ class OperadoresPagina(BaseModel):
     total: int
     offset: int
     limit: int
+

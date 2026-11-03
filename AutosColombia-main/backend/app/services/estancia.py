@@ -1,10 +1,12 @@
 import re
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
+from zoneinfo import ZoneInfo
 from functools import wraps
 
-from sqlalchemy import and_, select
+from sqlalchemy import and_, func, select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
+
 
 from app.models import Celda, Estancia, Operador, Vehiculo, required_text
 from app.schemas.celda import CeldaRespuesta
@@ -88,6 +90,77 @@ class ServicioEstancia:
         return EstanciaRespuesta.model_validate(estancia)
 
     @transaccion
+    def historial(
+        self,
+        placa: str | None = None,
+        desde: datetime | None = None,
+        hasta: datetime | None = None,
+        estado: str | None = None,
+        offset: int = 0,
+        limit: int = 20,
+    ) -> dict:
+        filtros = []
+
+        if placa:
+            placa = placa.strip().upper()
+
+            if not re.fullmatch(r"[A-Z]{3}[0-9]{3}", placa):
+                raise EstanciaError(
+                    422,
+                    "La placa debe tener exactamente 3 letras seguidas de 3 números."
+                )
+
+            filtros.append(
+                Estancia.vehiculo.has(Vehiculo.placa == placa)
+            )
+
+        if desde:
+            filtros.append(Estancia.entrada >= desde)
+
+        if hasta:
+            filtros.append(Estancia.entrada <= hasta)
+
+        if estado == "abierta":
+            filtros.append(Estancia.salida.is_(None))
+        elif estado == "cerrada":
+            filtros.append(Estancia.salida.is_not(None))
+        elif estado not in (None, "todos"):
+            raise EstanciaError(422, "El estado indicado no es válido.")
+
+        consulta = (
+            select(Estancia)
+            .options(
+                selectinload(Estancia.vehiculo),
+                selectinload(Estancia.celda),
+                selectinload(Estancia.operador_entrada),
+                selectinload(Estancia.operador_salida),
+            )
+            .where(*filtros)
+        )
+
+        total = self.session.scalar(
+            select(func.count())
+            .select_from(Estancia)
+            .where(*filtros)
+        ) or 0
+
+        items = list(
+            self.session.scalars(
+                consulta
+                .order_by(Estancia.entrada.desc(), Estancia.id.desc())
+                .offset(offset)
+                .limit(limit)
+            )
+        )
+
+        return {
+            "items": items,
+            "total": total,
+            "offset": offset,
+            "limit": limit,
+        }
+
+    @transaccion
     def salida(self, data: SalidaCrear) -> EstanciaRespuesta:
         vehiculo = self._vehiculo(data.placa)
         operador = self._operador(data.operador_id)
@@ -124,3 +197,84 @@ class ServicioEstancia:
             )
         return EstadoVehiculoRespuesta(vehiculo=VehiculoRespuesta.model_validate(vehiculo),
                                        esta_dentro=estancia is not None, estancia=abierta)
+    
+    @transaccion
+    def resumen(self) -> dict:
+        # El día operativo se calcula según la hora de Colombia.
+        zona = ZoneInfo("America/Bogota")
+        ahora = datetime.now(zona)
+
+        inicio_local = ahora.replace(
+            hour=0,     minute=0, second=0, microsecond=0
+        )
+
+        inicio_dia = inicio_local.astimezone(timezone.utc)
+        fin_dia = (inicio_local + timedelta(days=1)).astimezone(timezone.utc)
+
+        vehiculos_dentro = self.session.scalar(
+            select(func.count())
+            .select_from(Estancia)
+            .where(Estancia.salida.is_(None))
+        ) or 0
+
+        celdas_ocupadas = self.session.scalar(
+            select(func.count(func.distinct(Estancia.celda_id)))
+            .where(Estancia.salida.is_(None))
+        ) or 0
+
+        total_celdas = self.session.scalar(
+            select(func.count()).select_from(Celda)
+        ) or 0
+
+        entradas_hoy = self.session.scalar(
+            select(func.count())
+            .select_from(Estancia)
+            .where(
+                Estancia.entrada >= inicio_dia,
+                Estancia.entrada < fin_dia,
+            )
+        ) or 0
+
+        salidas_hoy = self.session.scalar(
+            select(func.count())
+            .select_from(Estancia)
+            .where(
+                Estancia.salida >= inicio_dia,
+                Estancia.salida < fin_dia,
+            )
+        ) or 0
+
+        ultimas = self.session.scalars(
+            select(Estancia)
+            .options(
+                selectinload(Estancia.vehiculo),
+                selectinload(Estancia.celda),
+            )
+            .order_by(Estancia.entrada.desc(), Estancia.id.desc())
+            .limit(5)
+        ).all()
+
+        ultimas_estancias = [
+            {
+                "id": estancia.id,
+                "placa": estancia.vehiculo.placa,
+                "vehiculo": (
+                    f"{estancia.vehiculo.marca} "
+                    f"{estancia.vehiculo.modelo} · "
+                    f"{estancia.vehiculo.color}"
+                ),
+                "celda": estancia.celda.codigo,
+                "hora_entrada": estancia.entrada.astimezone(zona).strftime("%H:%M"),
+                "estado": "Dentro" if estancia.salida is None else "Finalizada",
+            }
+            for estancia in ultimas
+        ]
+
+        return {
+            "vehiculos_dentro": vehiculos_dentro,
+            "celdas_ocupadas": celdas_ocupadas,
+            "celdas_disponibles": max(0, total_celdas - celdas_ocupadas),
+            "entradas_hoy": entradas_hoy,
+            "salidas_hoy": salidas_hoy,
+            "ultimas_estancias": ultimas_estancias,
+        }

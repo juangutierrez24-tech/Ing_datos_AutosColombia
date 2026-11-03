@@ -1,5 +1,138 @@
-<div class="demo-notice">Historial ficticio para demostración. Los filtros actúan únicamente como controles visuales.</div>
-<section class="card table-card management"><div class="section-head"><div><h3>Historial de estancias</h3><p>Consulta todas las entradas y salidas registradas.</p></div><button class="button secondary"><svg lucideCalendarDays></svg> Exportar vista</button></div>
-<div class="history-filters"><label class="field"><span>Placa</span><input placeholder="Ej. ABC123" /></label><label class="field"><span>Desde</span><input type="date" value="2025-05-01" /></label><label class="field"><span>Hasta</span><input type="date" value="2025-05-12" /></label><label class="field"><span>Estado</span><select><option>Todos los estados</option><option>Abierta</option><option>Cerrada</option></select></label><button class="button">Aplicar filtros</button></div>
-<div class="table-wrap"><table><thead><tr><th>Placa</th><th>Celda</th><th>Entrada</th><th>Salida</th><th>Operador entrada</th><th>Operador salida</th><th>Estado</th></tr></thead><tbody>@for (row of stays; track row[0]) { <tr>@for (value of row; track $index) { <td>@if ($index === 0) { <b class="plate">{{ value }}</b> } @else if ($index === 6) { <app-status-badge [tone]="value === 'Abierta' ? 'green' : 'gray'">{{ value }}</app-status-badge> } @else { {{ value }} }</td> }</tr> }</tbody></table></div>
-<div class="pagination"><span>Mostrando 1–4 de 286 estancias ficticias</span><div><button><svg lucideChevronLeft></svg></button><button class="current">1</button><button>2</button><button>3</button><button><svg lucideChevronRight></svg></button></div></div></section>
+
+<section class="card table-card management">
+  <div class="section-head">
+    <div>
+      <h3>Historial de estancias</h3>
+      <p>Consulta todas las entradas y salidas registradas.</p>
+    </div>
+
+    <button class="button secondary" (click)="exportar()" [disabled]="stays().length === 0">
+      <svg lucideCalendarDays></svg>
+      Exportar vista
+    </button>
+  </div>
+
+  <div class="history-filters">
+    <label class="field">
+      <span>Placa</span>
+      <input
+        [(ngModel)]="placa"
+        maxlength="6"
+        placeholder="Ej. ABC123"
+        (keyup.enter)="applyFilters()"
+      />
+    </label>
+
+    <label class="field">
+      <span>Desde</span>
+      <input type="date" [(ngModel)]="desde" />
+    </label>
+
+    <label class="field">
+      <span>Hasta</span>
+      <input type="date" [(ngModel)]="hasta" />
+    </label>
+
+    <label class="field">
+      <span>Estado</span>
+      <select [(ngModel)]="estado">
+        <option value="todos">Todos los estados</option>
+        <option value="abierta">Abierta</option>
+        <option value="cerrada">Cerrada</option>
+      </select>
+    </label>
+
+    <button class="button" (click)="applyFilters()" [disabled]="loading()">
+      {{ loading() ? "Consultando..." : "Aplicar filtros" }}
+    </button>
+  </div>
+
+  @if (error()) {
+    <div class="error-message">{{ error() }}</div>
+  }
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Placa</th>
+          <th>Celda</th>
+          <th>Entrada</th>
+          <th>Salida</th>
+          <th>Operador entrada</th>
+          <th>Operador salida</th>
+          <th>Estado</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        @for (stay of stays(); track stay.id) {
+          <tr>
+            <td>
+              <b class="plate">{{ stay.vehiculo.placa }}</b>
+            </td>
+
+            <td>{{ stay.celda.codigo }}</td>
+            <td>{{ fechaHora(stay.entrada) }}</td>
+            <td>{{ fechaHora(stay.salida) }}</td>
+            <td>{{ stay.operador_entrada.nombre }}</td>
+            <td>{{ stay.operador_salida?.nombre ?? "—" }}</td>
+
+            <td>
+              <app-status-badge
+                [tone]="stay.salida === null ? 'green' : 'gray'"
+              >
+                {{ estadoTexto(stay) }}
+              </app-status-badge>
+            </td>
+          </tr>
+        }
+
+        @if (!loading() && stays().length === 0) {
+          <tr>
+            <td colspan="7">
+              <div class="empty-state">
+                <h3>Sin registros</h3>
+                <p>No encontramos estancias que coincidan con los filtros.</p>
+              </div>
+            </td>
+          </tr>
+        }
+
+        @if (loading()) {
+          <tr>
+            <td colspan="7">Cargando historial...</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <div class="pagination">
+    <span>
+      Mostrando {{ firstItem }}–{{ lastItem }} de {{ total() }} estancias
+    </span>
+
+    <div>
+      <button
+        (click)="previousPage()"
+        [disabled]="offset() === 0 || loading()"
+        aria-label="Página anterior"
+      >
+        <svg lucideChevronLeft></svg>
+      </button>
+
+      <button class="current">
+        {{ paginaActual() }}
+      </button>
+
+      <button
+        (click)="nextPage()"
+        [disabled]="offset() + limit >= total() || loading()"
+        aria-label="Página siguiente"
+      >
+        <svg lucideChevronRight></svg>
+      </button>
+    </div>
+  </div>
+</section>

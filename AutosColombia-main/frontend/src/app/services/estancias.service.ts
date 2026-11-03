@@ -7,6 +7,7 @@ import { EntradaCrear, SalidaCrear, Estancia, EstadoVehiculo } from '../models/e
 import { API_BASE_URL } from './api.service';
 import { CeldasService } from './celdas.service';
 import { OperadoresService } from './operadores.service';
+import { EstanciasPagina } from "../models/estancia";
 
 interface Pagina<T> {
   items: T[];
@@ -38,6 +39,27 @@ export class EstanciasService {
   }
   operadores(): Observable<Operador[]> {
     return this.todas((offset) => this.operators.list(offset, 100));
+  }
+  historial(
+    filtros: {
+      placa?: string;
+      desde?: string;
+      hasta?: string;
+      estado?: "todos" | "abierta" | "cerrada";
+      offset?: number;
+      limit?: number;
+    }
+  ) {
+    return this.http.get<EstanciasPagina>(`${this.base}/estancias/historial`, {
+      params: {
+        ...(filtros.placa ? { placa: filtros.placa } : {}),
+        ...(filtros.desde ? { desde: filtros.desde } : {}),
+        ...(filtros.hasta ? { hasta: filtros.hasta } : {}),
+        estado: filtros.estado ?? "todos",
+        offset: filtros.offset ?? 0,
+        limit: filtros.limit ?? 10,
+      },
+    }).pipe(timeout(15000));
   }
 
   private todas<T>(load: (offset: number) => Observable<Pagina<T>>): Observable<T[]> {

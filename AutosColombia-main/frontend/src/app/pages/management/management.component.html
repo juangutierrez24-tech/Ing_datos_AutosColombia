@@ -1,10 +1,244 @@
-<div class="demo-notice">Todos los registros mostrados son ficticios y solo ilustran la interfaz.</div>
-@if (notice()) { <div class="info-message">{{ notice() }}</div> }
-<section class="card table-card management">
-  <div class="section-head"><div><h3>Gestión de {{ type().toLowerCase() }}</h3><p>Consulta, registra y actualiza la información.</p></div><button class="button" (click)="register()">+ Registrar {{ singular().toLowerCase() }}</button></div>
-  <div class="filters"><div class="filter-search"><svg lucideSearch></svg><input [placeholder]="type() === 'Vehículos' ? 'Buscar por placa' : 'Buscar por nombre o código'" /></div><select><option>Todos los estados</option></select><button class="button secondary">Filtrar</button></div>
-  <div class="table-wrap"><table><thead><tr>@for (column of data().columns; track column) { <th>{{ column }}</th> }<th>Acciones</th></tr></thead><tbody>
-    @for (row of data().rows; track row[0]) { <tr>@for (value of row; track $index) { <td>@if ($index === 0) { <b [class.plate]="type() === 'Vehículos'">{{ value }}</b> } @else if (isStatus(value)) { <app-status-badge [tone]="badgeTone(value)">{{ value }}</app-status-badge> } @else { {{ value }} }</td> }<td><button class="text-button">Consultar</button><button class="icon-button" aria-label="Más opciones"><svg lucideMoreHorizontal></svg></button></td></tr> }
-  </tbody></table></div>
-  <div class="pagination"><span>Mostrando 1–{{ data().rows.length }} de {{ data().total }}</span><div><button><svg lucideChevronLeft></svg></button><button class="current">1</button><button>2</button><button>3</button><button><svg lucideChevronRight></svg></button></div></div>
+
+@if (error()) {
+  <div class="management-alert management-alert-error">
+    {{ error() }}
+  </div>
+}
+
+@if (success()) {
+  <div class="management-alert management-alert-success">
+    {{ success() }}
+  </div>
+}
+
+<section class="management">
+
+  <div class="management-header">
+    <div>
+      <span class="management-eyebrow">ADMINISTRACIÓN</span>
+      <h2>Gestión de {{ type().toLowerCase() }}</h2>
+      <p>Consulta y administra la información registrada en el sistema.</p>
+    </div>
+
+    <button class="management-primary-button" (click)="register()">
+      <span>+</span>
+      Registrar {{ singular().toLowerCase() }}
+    </button>
+  </div>
+
+  @if (mostrarFormulario() && type() === 'Vehículos') {
+    <section class="management-form-card">
+
+      <div class="management-form-header">
+        <div>
+          <span class="management-eyebrow">NUEVO REGISTRO</span>
+          <h3>Registrar vehículo</h3>
+          <p>Ingresa los datos de identificación del vehículo.</p>
+        </div>
+
+        <button
+          type="button"
+          class="management-secondary-button"
+          (click)="cerrarFormulario()"
+          [disabled]="guardando()"
+        >
+          Cancelar
+        </button>
+      </div>
+
+      <form
+        class="management-form"
+        (submit)="$event.preventDefault(); guardarVehiculo()"
+      >
+        <div class="management-form-grid">
+
+          <label class="management-field">
+            <span>Placa <b>*</b></span>
+            <input
+              type="text"
+              maxlength="6"
+              placeholder="ABC123"
+              autocomplete="off"
+              [value]="formulario().placa"
+              (input)="formulario.update(f => ({
+                ...f,
+                placa: $any($event.target).value.toUpperCase()
+              }))"
+            />
+            <small>3 letras y 3 números.</small>
+          </label>
+
+          <label class="management-field">
+            <span>Marca <b>*</b></span>
+            <input
+              type="text"
+              placeholder="Ej. Mazda"
+              [value]="formulario().marca"
+              (input)="formulario.update(f => ({
+                ...f,
+                marca: $any($event.target).value
+              }))"
+            />
+          </label>
+
+          <label class="management-field">
+            <span>Modelo / año <b>*</b></span>
+            <input
+              type="number"
+              min="1"
+              max="9999"
+              placeholder="Ej. 2022"
+              [value]="formulario().modelo"
+              (input)="formulario.update(f => ({
+                ...f,
+                modelo: $any($event.target).value
+              }))"
+            />
+          </label>
+
+          <label class="management-field">
+            <span>Color <b>*</b></span>
+            <input
+              type="text"
+              placeholder="Ej. Gris"
+              [value]="formulario().color"
+              (input)="formulario.update(f => ({
+                ...f,
+                color: $any($event.target).value
+              }))"
+            />
+          </label>
+
+          <label class="management-field">
+            <span>Tipo de vehículo <b>*</b></span>
+            <select
+              [value]="formulario().tipo"
+              (change)="formulario.update(f => ({
+                ...f,
+                tipo: $any($event.target).value
+              }))"
+            >
+              @for (tipo of tiposVehiculo; track tipo) {
+                <option [value]="tipo">{{ tipo }}</option>
+              }
+            </select>
+          </label>
+
+        </div>
+
+        <div class="management-form-actions">
+          <button
+            type="button"
+            class="management-secondary-button"
+            (click)="cerrarFormulario()"
+            [disabled]="guardando()"
+          >
+            Cancelar
+          </button>
+
+          <button
+            type="submit"
+            class="management-primary-button"
+            [disabled]="guardando()"
+          >
+            {{ guardando() ? 'Registrando...' : 'Guardar vehículo' }}
+          </button>
+        </div>
+      </form>
+    </section>
+  }
+
+  <section class="management-table-card">
+
+    <div class="management-table-toolbar">
+      <div>
+        <h3>Registros</h3>
+        <p>{{ total() }} elementos encontrados</p>
+      </div>
+
+      <div class="management-search">
+        <svg lucideSearch></svg>
+        <input
+          [placeholder]="type() === 'Vehículos'
+            ? 'Buscar por placa...'
+            : type() === 'Celdas'
+              ? 'Buscar por código...'
+              : 'Buscar por nombre o teléfono...'"
+          [value]="search()"
+          (input)="search.set($any($event.target).value)"
+        />
+      </div>
+    </div>
+
+    <div class="management-table-wrap">
+      <table>
+        <thead>
+          <tr>
+            @for (column of columns(); track column) {
+              <th>{{ column }}</th>
+            }
+          </tr>
+        </thead>
+
+        <tbody>
+          @if (loading()) {
+            <tr>
+              <td [attr.colspan]="columns().length" class="management-empty">
+                Cargando registros...
+              </td>
+            </tr>
+          } @else if (filteredRows().length === 0) {
+            <tr>
+              <td [attr.colspan]="columns().length" class="management-empty">
+                No se encontraron registros.
+              </td>
+            </tr>
+          } @else {
+            @for (row of filteredRows(); track row.id) {
+              <tr>
+                @for (value of row.values; track $index) {
+                  <td>
+                    @if ($index === 0 && type() === 'Vehículos') {
+                      <b class="management-plate">{{ value }}</b>
+                    } @else {
+                      {{ value }}
+                    }
+                  </td>
+                }
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <div class="management-pagination">
+      <span>
+        Página {{ pageNumber() }} de {{ totalPages() }}
+        <span class="management-pagination-separator">·</span>
+        {{ total() }} registros
+      </span>
+
+      <div class="management-pagination-controls">
+        <button
+          (click)="previousPage()"
+          [disabled]="offset() === 0 || loading()"
+          aria-label="Página anterior"
+        >
+          <svg lucideChevronLeft></svg>
+        </button>
+
+        <span class="management-current-page">{{ pageNumber() }}</span>
+
+        <button
+          (click)="nextPage()"
+          [disabled]="pageNumber() >= totalPages() || loading()"
+          aria-label="Página siguiente"
+        >
+          <svg lucideChevronRight></svg>
+        </button>
+      </div>
+    </div>
+
+  </section>
 </section>
