@@ -1,0 +1,14 @@
+<div class="demo-notice">Gestión administrativa · Los operadores mostrados son datos ficticios.</div>
+@if (saved()) { <div class="success-message">Operador {{ editing() ? "actualizado" : "registrado" }} correctamente en la demostración.</div> }
+<section class="card table-card management">
+  <div class="section-head"><div><h3>Gestión de operadores</h3><p>Administra las cuentas con acceso operativo.</p></div><button class="button" (click)="open()"><svg lucideUserPlus></svg> Registrar operador</button></div>
+  <div class="filters"><div class="filter-search"><svg lucideSearch></svg><input placeholder="Buscar por nombre o usuario" /></div><select><option>Todos los operadores</option><option>Activos</option></select><button class="button secondary">Filtrar</button></div>
+  <div class="table-wrap"><table><thead><tr><th>Nombre</th><th>Nombre de usuario</th><th>Teléfono</th><th>Rol</th><th>Acciones</th></tr></thead><tbody>@for (row of rows; track row[1]) { <tr><td><b>{{ row[0] }}</b></td><td>{{ row[1] }}</td><td>{{ row[2] }}</td><td><app-status-badge tone="blue">{{ row[3] }}</app-status-badge></td><td><button class="text-button" (click)="open(true)"><svg lucideEdit3></svg> Editar</button></td></tr> }</tbody></table></div>
+</section>
+@if (formOpen()) { <div class="modal-backdrop"><section class="modal card form-modal"><button class="modal-close" (click)="formOpen.set(false)"><svg lucideX></svg></button><div class="modal-title"><span><svg lucideUserPlus></svg></span><div><h3>{{ editing() ? "Editar operador" : "Registrar operador" }}</h3><p>Los campos marcados son obligatorios.</p></div></div><div class="form-grid compact">
+  <label class="field"><span>Nombre completo *</span><input [(ngModel)]="name" placeholder="Ej. Juan Pérez" />@if (submitted() && !name) { <small>El nombre es obligatorio.</small> }</label>
+  <label class="field"><span>Teléfono *</span><input [(ngModel)]="phone" placeholder="Ej. 300 123 4567" />@if (submitted() && !phone) { <small>El teléfono es obligatorio.</small> }</label>
+  <label class="field"><span>Nombre de usuario *</span><input [(ngModel)]="username" placeholder="Ej. jperez" />@if (submitted() && !username) { <small>El usuario es obligatorio y debe ser único.</small> }</label>
+  <label class="field"><span>{{ editing() ? "Nueva contraseña" : "Contraseña *" }}</span><input [(ngModel)]="password" type="password" placeholder="Mínimo 8 caracteres" />@if (submitted() && !editing() && password.length < 8) { <small>La contraseña debe tener mínimo 8 caracteres.</small> }</label>
+  <label class="field form-span"><span>Rol</span><select disabled><option>Operador</option></select></label>
+</div><div class="modal-actions"><button class="button secondary" (click)="formOpen.set(false)">Cancelar</button><button class="button" (click)="save()">Guardar</button></div></section></div> }

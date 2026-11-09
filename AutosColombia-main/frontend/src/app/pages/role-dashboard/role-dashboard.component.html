@@ -1,0 +1,17 @@
+<div class="demo-notice">Panel de {{ role }} · Datos ficticios para la Iteración 2.</div>
+<div class="welcome"><div><p class="eyebrow">Área de {{ role.toLowerCase() }}</p><h2>{{ isAdmin ? "Control integral del parqueadero" : "Resumen de operación" }}</h2><p>{{ isAdmin ? "Accede a las funciones operativas y a la administración del sistema." : "Consulta el estado actual y registra movimientos rápidamente." }}</p></div><app-status-badge tone="blue">{{ role }}</app-status-badge></div>
+<div class="stats" [class.admin-stats]="isAdmin">@for (stat of stats; track stat[0]) { <article class="stat"><div class="stat-icon blue">@switch (stat[2]) {@case ("users"){<svg lucideUsersRound></svg>}@case ("parking"){<svg lucideCircleParking></svg>}@case ("car"){<svg lucideCar></svg>}@case ("alert"){<svg lucideTriangleAlert></svg>}@case ("login"){<svg lucideLogIn></svg>}@case ("logout"){<svg lucideLogOut></svg>}}</div><p>{{ stat[0] }}</p><strong>{{ stat[1] }}</strong><small>Actualizado hace 2 minutos</small></article>}</div>
+@if (isAdmin) {
+<section class="card quick-section"><div class="section-head"><div><h3>Accesos rápidos</h3><p>Operaciones frecuentes del administrador</p></div></div><div class="admin-quick-grid">@for (action of adminActions; track action[0]) { <a class="quick-action-card" [routerLink]="action[1]"><span>@switch (action[2]) {@case ("plus"){<svg lucidePlus></svg>}@case ("login"){<svg lucideLogIn></svg>}@case ("logout"){<svg lucideLogOut></svg>}@case ("search"){<svg lucideSearch></svg>}@case ("users"){<svg lucideUsersRound></svg>}@case ("parking"){<svg lucideCircleParking></svg>}@case ("alert"){<svg lucideTriangleAlert></svg>}}</span><b>{{ action[0] }}</b></a> }</div></section>
+}
+<section class="card table-card recent-section"><div class="section-head"><div><h3>Actividad reciente</h3><p>Últimos movimientos operativos y administrativos</p></div></div><div class="activity-list">
+  @if (isAdmin) {
+    <div><span class="activity-icon"><svg lucideLogIn></svg></span><p><b>Entrada registrada · KLM482</b><small>Renault Duster · Celda C-01 · Carolina Ramírez · Hace 8 min</small></p><app-status-badge>Entrada</app-status-badge></div>
+    <div><span class="activity-icon"><svg lucideLogOut></svg></span><p><b>Salida registrada · ABC123</b><small>Chevrolet Onix · Celda A-05 liberada · Hace 11 min</small></p><app-status-badge tone="gray">Salida</app-status-badge></div>
+    <div><span class="activity-icon warning"><svg lucideTriangleAlert></svg></span><p><b>Nueva alerta sobre el vehículo KLM482</b><small>Reportada por Laura Gómez · Hace 12 min</small></p><app-status-badge tone="red">Pendiente</app-status-badge></div>
+    <div><span class="activity-icon"><svg lucideUsersRound></svg></span><p><b>Operador Miguel Torres actualizado</b><small>Cambio administrativo por Andrés Silva · Hace 1 h</small></p><app-status-badge tone="blue">Administración</app-status-badge></div>
+  } @else {
+    <div><span class="activity-icon"><svg lucideLogIn></svg></span><p><b>Entrada · KLM482</b><small>Renault Duster · Celda A-12 · 08:42</small></p><app-status-badge>Dentro</app-status-badge></div>
+    <div><span class="activity-icon"><svg lucideLogOut></svg></span><p><b>Salida · ABC123</b><small>Chevrolet Onix · Celda liberada A-05 · 09:12</small></p><app-status-badge tone="gray">Finalizada</app-status-badge></div>
+  }
+</div></section>

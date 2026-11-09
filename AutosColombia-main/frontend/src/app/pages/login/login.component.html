@@ -1,0 +1,97 @@
+
+<div class="login-page">
+  <div class="login-brand">
+    <div>
+      <svg lucideCar></svg>
+    </div>
+    <span><b>Autos</b> Colombia</span>
+  </div>
+
+  <section class="login-card">
+    <div class="login-heading">
+      <span>Acceso seguro</span>
+      <h1>Iniciar sesión</h1>
+      <p>Ingresa tus credenciales para acceder al sistema.</p>
+    </div>
+
+    @if (errorMessage()) {
+      <div class="error-box login-error" role="alert">
+        {{ errorMessage() }}
+      </div>
+    }
+
+    <form (ngSubmit)="login()">
+      <label class="field">
+        <span>Nombre de usuario</span>
+
+        <div class="input-icon">
+          <svg lucideUserRound></svg>
+
+          <input
+            name="username"
+            [(ngModel)]="username"
+            autocomplete="username"
+            placeholder="Ingrese su usuario"
+            [disabled]="isLoading()"
+          />
+        </div>
+
+        @if (submitted() && !username.trim()) {
+          <small>El nombre de usuario es obligatorio.</small>
+        }
+      </label>
+
+      <label class="field">
+        <span>Contraseña</span>
+
+        <div class="input-icon password-input">
+          <svg lucideLockKeyhole></svg>
+
+          <input
+            name="password"
+            [(ngModel)]="password"
+            [type]="showPassword() ? 'text' : 'password'"
+            autocomplete="current-password"
+            placeholder="Ingrese su contraseña"
+            [disabled]="isLoading()"
+          />
+
+          <button
+            type="button"
+            (click)="showPassword.set(!showPassword())"
+            [disabled]="isLoading()"
+            [attr.aria-label]="
+              showPassword() ? 'Ocultar contraseña' : 'Mostrar contraseña'
+            "
+          >
+            @if (showPassword()) {
+              <svg lucideEyeOff></svg>
+            } @else {
+              <svg lucideEye></svg>
+            }
+          </button>
+        </div>
+
+        @if (submitted() && !password) {
+          <small>La contraseña es obligatoria.</small>
+        }
+      </label>
+
+      <button
+        class="button full login-submit"
+        type="submit"
+        [disabled]="isLoading()"
+      >
+        @if (isLoading()) {
+          Verificando credenciales...
+        } @else {
+          Iniciar sesión
+        }
+      </button>
+    </form>
+
+    <p class="login-foot">
+      Sistema de gestión de parqueadero · Autos Colombia
+    </p>
+  </section>
+</div>
