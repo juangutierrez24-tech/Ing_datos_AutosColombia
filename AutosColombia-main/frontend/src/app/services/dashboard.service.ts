@@ -7,13 +7,9 @@ import { API_BASE_URL } from './api.service';
 export interface UltimaEstancia {
   id: number;
   placa: string;
-  marca: string;
-  modelo: number;
-  color: string;
-  tipo: string;
+  vehiculo: string;
   celda: string;
-  entrada: string;
-  salida: string | null;
+  hora_entrada: string;
   estado: 'Dentro' | 'Finalizada';
 }
 

@@ -1,5 +1,220 @@
-<div class="demo-notice">Vista del Operador · Puede consultar vehículos y reportar datos incorrectos, pero no editarlos.</div>
-@if (sent()) { <div class="success-message"><svg lucideCheck></svg> Alerta registrada correctamente. Un administrador revisará la información.</div> }
-<section class="card table-card management"><div class="section-head"><div><h3>Vehículos</h3><p>Consulta los vehículos registrados en el sistema.</p></div></div><div class="filters"><div class="filter-search"><svg lucideSearch></svg><input placeholder="Buscar por placa" /></div><button class="button secondary">Buscar</button></div>
-<div class="table-wrap"><table><thead><tr><th>Placa</th><th>Marca</th><th>Modelo</th><th>Color</th><th>Tipo</th><th>Acción</th></tr></thead><tbody>@for (row of rows; track row[0]) { <tr><td><b class="plate">{{ row[0] }}</b></td><td>{{ row[1] }}</td><td>{{ row[2] }}</td><td>{{ row[3] }}</td><td>{{ row[4] }}</td><td><button class="text-button danger-text" (click)="report(row)"><svg lucideTriangleAlert></svg> Reportar error</button></td></tr> }</tbody></table></div></section>
-@if (modalOpen()) { <div class="modal-backdrop"><section class="modal card alert-modal"><button class="modal-close" (click)="modalOpen.set(false)"><svg lucideX></svg></button><div class="modal-title"><span class="warning"><svg lucideTriangleAlert></svg></span><div><h3>Reportar error de vehículo</h3><p>El administrador revisará la información enviada.</p></div></div><div class="vehicle-readonly"><div class="car-tile"><svg lucideCar></svg></div><div><b class="plate large">{{ selected[0] }}</b><span>{{ selected[1] }} · {{ selected[2] }}</span></div></div><dl class="readonly-grid"><div><dt>Color</dt><dd>{{ selected[3] }}</dd></div><div><dt>Tipo</dt><dd>{{ selected[4] }}</dd></div></dl><label class="field"><span>Descripción del error *</span><textarea [(ngModel)]="description" rows="4" placeholder="Describa qué información del vehículo considera incorrecta."></textarea>@if (!description.trim()) { <small>Describe el dato que debe revisar el administrador.</small> }</label><div class="modal-actions"><button class="button secondary" (click)="modalOpen.set(false)">Cancelar</button><button class="button" [disabled]="!description.trim()" (click)="send()">Enviar alerta</button></div></section></div> }
+<div class="demo-notice">
+  Vista del Operador · Puede consultar vehículos y reportar datos
+  incorrectos, pero no editarlos.
+</div>
+
+@if (successMessage()) {
+  <div class="success-message">
+    <svg lucideCheck></svg>
+    {{ successMessage() }}
+  </div>
+}
+
+@if (errorMessage()) {
+  <div class="error-message">
+    <svg lucideTriangleAlert></svg>
+    {{ errorMessage() }}
+  </div>
+}
+
+<section class="card table-card management">
+  <div class="section-head">
+    <div>
+      <h3>Vehículos</h3>
+      <p>
+        Consulta los vehículos registrados en el sistema.
+        @if (!loading()) {
+          <span>{{ total() }} registrados.</span>
+        }
+      </p>
+    </div>
+  </div>
+
+  <div class="filters">
+    <div class="filter-search">
+      <svg lucideSearch></svg>
+
+      <input
+        type="text"
+        placeholder="Buscar por placa"
+        [ngModel]="search()"
+        (ngModelChange)="search.set($event)"
+      />
+    </div>
+  </div>
+
+  @if (loading()) {
+    <div class="empty-state">
+      Cargando vehículos...
+    </div>
+  } @else if (filteredVehicles().length === 0) {
+    <div class="empty-state">
+      @if (search().trim()) {
+        No se encontraron vehículos con esa placa.
+      } @else {
+        No hay vehículos registrados.
+      }
+    </div>
+  } @else {
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Placa</th>
+            <th>Marca</th>
+            <th>Modelo</th>
+            <th>Color</th>
+            <th>Tipo</th>
+            <th>Acción</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          @for (
+            vehicle of filteredVehicles();
+            track vehicle.id
+          ) {
+            <tr>
+              <td>
+                <b class="plate">
+                  {{ vehicle.placa }}
+                </b>
+              </td>
+
+              <td>
+                {{ vehicle.marca }}
+              </td>
+
+              <td>
+                {{ vehicle.modelo }}
+              </td>
+
+              <td>
+                {{ vehicle.color }}
+              </td>
+
+              <td>
+                {{ displayType(vehicle.tipo) }}
+              </td>
+
+              <td>
+                <button
+                  class="text-button danger-text"
+                  type="button"
+                  (click)="report(vehicle)"
+                >
+                  <svg lucideTriangleAlert></svg>
+                  Reportar error
+                </button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</section>
+
+@if (modalOpen() && selected) {
+  <div class="modal-backdrop">
+    <section class="modal card alert-modal">
+
+      <button
+        class="modal-close"
+        type="button"
+        [disabled]="sending()"
+        (click)="closeModal()"
+      >
+        <svg lucideX></svg>
+      </button>
+
+      <div class="modal-title">
+        <span class="warning">
+          <svg lucideTriangleAlert></svg>
+        </span>
+
+        <div>
+          <h3>Reportar error de vehículo</h3>
+
+          <p>
+            El administrador revisará la información enviada.
+          </p>
+        </div>
+      </div>
+
+      <div class="vehicle-readonly">
+        <div class="car-tile">
+          <svg lucideCar></svg>
+        </div>
+
+        <div>
+          <b class="plate large">
+            {{ selected.placa }}
+          </b>
+
+          <span>
+            {{ selected.marca }} · {{ selected.modelo }}
+          </span>
+        </div>
+      </div>
+
+      <dl class="readonly-grid">
+        <div>
+          <dt>Color</dt>
+          <dd>
+            {{ selected.color }}
+          </dd>
+        </div>
+
+        <div>
+          <dt>Tipo</dt>
+          <dd>
+            {{ displayType(selected.tipo) }}
+          </dd>
+        </div>
+      </dl>
+
+      <label class="field">
+        <span>Descripción del error *</span>
+
+        <textarea
+          [(ngModel)]="description"
+          rows="4"
+          placeholder="Describa qué información del vehículo considera incorrecta."
+          [disabled]="sending()"
+        ></textarea>
+
+        @if (!description.trim()) {
+          <small>
+            Describe el dato que debe revisar el administrador.
+          </small>
+        }
+      </label>
+
+      <div class="modal-actions">
+        <button
+          class="button secondary"
+          type="button"
+          [disabled]="sending()"
+          (click)="closeModal()"
+        >
+          Cancelar
+        </button>
+
+        <button
+          class="button"
+          type="button"
+          [disabled]="!description.trim() || sending()"
+          (click)="send()"
+        >
+          @if (sending()) {
+            Enviando...
+          } @else {
+            Enviar alerta
+          }
+        </button>
+      </div>
+
+    </section>
+  </div>
+}

@@ -50,7 +50,7 @@ export class EstanciasService {
       limit?: number;
     }
   ) {
-    return this.http.get<EstanciasPagina>(`${this.base}/estancias/historial`, {
+    return this.http.get<EstanciasPagina>(`${this.base}/historial`, {
       params: {
         ...(filtros.placa ? { placa: filtros.placa } : {}),
         ...(filtros.desde ? { desde: filtros.desde } : {}),

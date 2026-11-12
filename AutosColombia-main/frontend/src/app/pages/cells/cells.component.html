@@ -1,6 +1,254 @@
-<div class="demo-notice">Gestión administrativa · La disponibilidad refleja datos ficticios.</div>
-@if (saved()) { <div class="success-message">Celda {{ editing() ? "actualizada" : "registrada" }} correctamente en la demostración.</div> }
-<div class="availability-summary"><div class="card"><span>Disponibles</span><strong>24</strong><app-status-badge>Disponible</app-status-badge></div><div class="card"><span>Ocupadas</span><strong>38</strong><app-status-badge tone="blue">Ocupada</app-status-badge></div><div class="card"><span>Total de celdas</span><strong>62</strong><small>Moto, automóvil y camioneta</small></div></div>
-<section class="card table-card management"><div class="section-head"><div><h3>Gestión de celdas</h3><p>Administra las celdas y consulta su disponibilidad.</p></div><button class="button" (click)="open()"><svg lucidePlus></svg> Registrar celda</button></div><div class="filters"><div class="filter-search"><svg lucideSearch></svg><input placeholder="Buscar por código" /></div><select><option>Todos los tipos</option><option>Moto</option><option>Automóvil</option><option>Camioneta</option></select><select><option>Toda disponibilidad</option><option>Disponible</option><option>Ocupada</option></select></div>
-<div class="table-wrap"><table><thead><tr><th>Código</th><th>Tipo</th><th>Disponibilidad</th><th>Acciones</th></tr></thead><tbody>@for (row of rows; track row[0]) { <tr><td><b>{{ row[0] }}</b></td><td>{{ row[1] }}</td><td><app-status-badge [tone]="row[2] === 'Disponible' ? 'green' : 'blue'">{{ row[2] }}</app-status-badge></td><td><button class="text-button" (click)="open(true)"><svg lucideEdit3></svg> Editar</button></td></tr> }</tbody></table></div></section>
-@if (formOpen()) { <div class="modal-backdrop"><section class="modal card small-modal"><button class="modal-close" (click)="formOpen.set(false)"><svg lucideX></svg></button><div class="modal-title"><span><svg lucidePlus></svg></span><div><h3>{{ editing() ? "Editar celda" : "Registrar celda" }}</h3><p>Define el código único y el tipo permitido.</p></div></div><label class="field"><span>Código *</span><input [(ngModel)]="code" placeholder="Ej. A-03" />@if (!code) { <small>El código es obligatorio y no puede estar duplicado.</small> }</label><label class="field"><span>Tipo *</span><select [(ngModel)]="type"><option>Moto</option><option>Automóvil</option><option>Camioneta</option></select></label><div class="modal-actions"><button class="button secondary" (click)="formOpen.set(false)">Cancelar</button><button class="button" [disabled]="!code" (click)="save()">Guardar</button></div></section></div> }
+
+@if (errorMessage()) {
+  <div class="error-message" role="alert">
+    {{ errorMessage() }}
+  </div>
+}
+
+@if (successMessage()) {
+  <div class="success-message" role="status">
+    {{ successMessage() }}
+  </div>
+}
+
+<div class="demo-notice">
+  Gestión administrativa · Los datos se consultan directamente desde la base de datos.
+</div>
+
+<div class="availability-summary">
+  <div class="card">
+    <span>Total de celdas</span>
+    <strong>{{ total() }}</strong>
+    <small>Registradas en el sistema</small>
+  </div>
+
+  <div class="card">
+    <span>Motos</span>
+    <strong>{{ motoCount() }}</strong>
+    <small>En esta página</small>
+  </div>
+
+  <div class="card">
+    <span>Automóviles</span>
+    <strong>{{ automobileCount() }}</strong>
+    <small>En esta página</small>
+  </div>
+
+  <div class="card">
+    <span>Camionetas</span>
+    <strong>{{ truckCount() }}</strong>
+    <small>En esta página</small>
+  </div>
+</div>
+
+<section class="card table-card management">
+  <div class="section-head">
+    <div>
+      <h3>Gestión de celdas</h3>
+      <p>Registra, modifica y consulta las celdas del parqueadero.</p>
+    </div>
+
+    <button
+      type="button"
+      class="button"
+      (click)="open()"
+    >
+      <svg lucidePlus></svg>
+      Registrar celda
+    </button>
+  </div>
+
+  <div class="filters">
+    <div class="filter-search">
+      <svg lucideSearch></svg>
+      <input
+        type="text"
+        placeholder="Buscar por código"
+        [(ngModel)]="search"
+      />
+    </div>
+
+    <select [(ngModel)]="selectedType">
+      <option value="">Todos los tipos</option>
+      <option value="Moto">Moto</option>
+      <option value="Automóvil">Automóvil</option>
+      <option value="Camioneta">Camioneta</option>
+    </select>
+  </div>
+
+  @if (loading()) {
+    <div class="empty-state">
+      Cargando celdas...
+    </div>
+  } @else if (rows().length === 0) {
+    <div class="empty-state">
+      No se encontraron celdas con los filtros seleccionados.
+    </div>
+  } @else {
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Código</th>
+            <th>Tipo</th>
+            <th>Disponibilidad</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          @for (cell of rows(); track cell.id) {
+            <tr>
+              <td>
+                <b>{{ cell.codigo }}</b>
+              </td>
+
+              <td>{{ cell.tipo }}</td>
+
+              <td>
+                <app-status-badge tone="blue">
+                  No consultada
+                </app-status-badge>
+              </td>
+
+              <td>
+                <div class="table-actions">
+                  <button
+                    type="button"
+                    class="text-button"
+                    (click)="open(true, cell)"
+                  >
+                    <svg lucideEdit3></svg>
+                    Editar
+                  </button>
+
+                  <button
+                    type="button"
+                    class="text-button danger"
+                    (click)="delete(cell)"
+                  >
+                    <svg lucideX></svg>
+                    Eliminar
+                  </button>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+  <div class="pagination">
+    <button
+      type="button"
+      class="button secondary"
+      (click)="previousPage()"
+      [disabled]="offset() === 0 || loading()"
+    >
+      Anterior
+    </button>
+
+    <span>
+      {{ total() === 0 ? 0 : offset() + 1 }} -
+      {{ offset() + cells().length }}
+      de {{ total() }}
+    </span>
+
+    <button
+      type="button"
+      class="button secondary"
+      (click)="nextPage()"
+      [disabled]="offset() + limit >= total() || loading()"
+    >
+      Siguiente
+    </button>
+  </div>
+</section>
+
+@if (formOpen()) {
+  <div class="modal-backdrop">
+    <section
+      class="modal card small-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="cell-modal-title"
+    >
+      <button
+        type="button"
+        class="modal-close"
+        aria-label="Cerrar"
+        (click)="closeForm()"
+      >
+        <svg lucideX></svg>
+      </button>
+
+      <div class="modal-title">
+        <span>
+          <svg lucidePlus></svg>
+        </span>
+
+        <div>
+          <h3 id="cell-modal-title">
+            {{ editing() ? "Editar celda" : "Registrar celda" }}
+          </h3>
+
+          <p>
+            Define el código único y el tipo de celda.
+          </p>
+        </div>
+      </div>
+
+      <label class="field">
+        <span>Código *</span>
+
+        <input
+          type="text"
+          [(ngModel)]="code"
+          placeholder="Ej. A-03"
+          maxlength="30"
+          [disabled]="saving()"
+        />
+
+        @if (!code.trim()) {
+          <small>
+            El código es obligatorio.
+          </small>
+        }
+      </label>
+
+      <label class="field">
+        <span>Tipo *</span>
+
+        <select
+          [(ngModel)]="type"
+          [disabled]="saving()"
+        >
+          <option value="Moto">Moto</option>
+          <option value="Automóvil">Automóvil</option>
+          <option value="Camioneta">Camioneta</option>
+        </select>
+      </label>
+
+      <div class="modal-actions">
+        <button
+          type="button"
+          class="button secondary"
+          (click)="closeForm()"
+          [disabled]="saving()"
+        >
+          Cancelar
+        </button>
+
+        <button
+          type="button"
+          class="button"
+          (click)="save()"
+          [disabled]="!code.trim() || saving()"
+        >
+          {{ saving() ? "Guardando..." : "Guardar" }}
+        </button>
+      </div>
+    </section>
+  </div>
+}

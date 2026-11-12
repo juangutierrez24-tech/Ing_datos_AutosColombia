@@ -89,3 +89,4 @@ class UsuariosPagina(BaseModel):
     total: int
     offset: int
     limit: int
+

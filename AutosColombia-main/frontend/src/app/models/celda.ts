@@ -1,8 +1,19 @@
+export type TipoCelda = "Moto" | "Automóvil" | "Camioneta";
+
+export interface Celda {
+  id: number;
+  codigo: string;
+  tipo: TipoCelda;
+}
 export interface CeldaCrear {
   codigo: string;
-  tipo: string;
+  tipo: TipoCelda;
 }
-export type CeldaActualizar = Partial<CeldaCrear>;
+
+export interface CeldaActualizar {
+  codigo?: string;
+  tipo?: TipoCelda;
+}
 export interface Celda extends CeldaCrear {
   id: number;
 }

@@ -29,7 +29,6 @@ import {
     LucideCircleParking,
     LucideLogIn,
     LucideLogOut,
-    LucideRefreshCw,
   ],
   templateUrl: "./dashboard.component.html",
 })
@@ -118,7 +117,8 @@ export class DashboardComponent {
     }).format(new Date(fecha));
   }
 
+
   descripcionVehiculo(estancia: UltimaEstancia): string {
-    return `${estancia.marca} ${estancia.modelo} · ${estancia.color}`;
+    return estancia.vehiculo;
   }
 }

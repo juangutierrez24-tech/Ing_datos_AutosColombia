@@ -14,6 +14,8 @@ from app.routers.operadores import router as operadores_router
 from app.routers.estancias import router as estancias_router
 from app.routers.auth import router as auth_router
 from app.routers.usuarios import router as usuarios_router
+from app.routers.registro_login import router as registro_login_router
+from app.routers.alertas import router as alertas_router
 
 # Excepciones de los servicios
 from app.services.vehiculo import VehiculoError
@@ -22,6 +24,8 @@ from app.services.operador import OperadorError
 from app.services.estancia import EstanciaError
 from app.services.auth import AuthError
 from app.services.usuario import UsuarioError
+from app.services.registro_login import RegistroLoginError
+from app.services.alerta import AlertaError
 
 
 app = FastAPI(title="Autos Colombia API")
@@ -35,6 +39,8 @@ app.include_router(operadores_router)
 app.include_router(estancias_router)
 app.include_router(auth_router)
 app.include_router(usuarios_router)
+app.include_router(registro_login_router)
+app.include_router(alertas_router)
 
 
 # MANEJO CENTRALIZADO DE EXCEPCIONES
@@ -45,6 +51,8 @@ app.include_router(usuarios_router)
 @app.exception_handler(EstanciaError)
 @app.exception_handler(AuthError)
 @app.exception_handler(UsuarioError)
+@app.exception_handler(RegistroLoginError)
+@app.exception_handler(AlertaError)
 async def entity_error_handler(
     request: Request,
     error: (
@@ -54,6 +62,8 @@ async def entity_error_handler(
         | EstanciaError
         | AuthError
         | UsuarioError
+        | RegistroLoginError
+        | AlertaError
     ),
 ) -> JSONResponse:
     return JSONResponse(

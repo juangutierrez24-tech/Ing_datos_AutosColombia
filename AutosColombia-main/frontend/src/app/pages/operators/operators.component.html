@@ -1,14 +1,376 @@
-<div class="demo-notice">Gestión administrativa · Los operadores mostrados son datos ficticios.</div>
-@if (saved()) { <div class="success-message">Operador {{ editing() ? "actualizado" : "registrado" }} correctamente en la demostración.</div> }
-<section class="card table-card management">
-  <div class="section-head"><div><h3>Gestión de operadores</h3><p>Administra las cuentas con acceso operativo.</p></div><button class="button" (click)="open()"><svg lucideUserPlus></svg> Registrar operador</button></div>
-  <div class="filters"><div class="filter-search"><svg lucideSearch></svg><input placeholder="Buscar por nombre o usuario" /></div><select><option>Todos los operadores</option><option>Activos</option></select><button class="button secondary">Filtrar</button></div>
-  <div class="table-wrap"><table><thead><tr><th>Nombre</th><th>Nombre de usuario</th><th>Teléfono</th><th>Rol</th><th>Acciones</th></tr></thead><tbody>@for (row of rows; track row[1]) { <tr><td><b>{{ row[0] }}</b></td><td>{{ row[1] }}</td><td>{{ row[2] }}</td><td><app-status-badge tone="blue">{{ row[3] }}</app-status-badge></td><td><button class="text-button" (click)="open(true)"><svg lucideEdit3></svg> Editar</button></td></tr> }</tbody></table></div>
-</section>
-@if (formOpen()) { <div class="modal-backdrop"><section class="modal card form-modal"><button class="modal-close" (click)="formOpen.set(false)"><svg lucideX></svg></button><div class="modal-title"><span><svg lucideUserPlus></svg></span><div><h3>{{ editing() ? "Editar operador" : "Registrar operador" }}</h3><p>Los campos marcados son obligatorios.</p></div></div><div class="form-grid compact">
-  <label class="field"><span>Nombre completo *</span><input [(ngModel)]="name" placeholder="Ej. Juan Pérez" />@if (submitted() && !name) { <small>El nombre es obligatorio.</small> }</label>
-  <label class="field"><span>Teléfono *</span><input [(ngModel)]="phone" placeholder="Ej. 300 123 4567" />@if (submitted() && !phone) { <small>El teléfono es obligatorio.</small> }</label>
-  <label class="field"><span>Nombre de usuario *</span><input [(ngModel)]="username" placeholder="Ej. jperez" />@if (submitted() && !username) { <small>El usuario es obligatorio y debe ser único.</small> }</label>
-  <label class="field"><span>{{ editing() ? "Nueva contraseña" : "Contraseña *" }}</span><input [(ngModel)]="password" type="password" placeholder="Mínimo 8 caracteres" />@if (submitted() && !editing() && password.length < 8) { <small>La contraseña debe tener mínimo 8 caracteres.</small> }</label>
-  <label class="field form-span"><span>Rol</span><select disabled><option>Operador</option></select></label>
-</div><div class="modal-actions"><button class="button secondary" (click)="formOpen.set(false)">Cancelar</button><button class="button" (click)="save()">Guardar</button></div></section></div> }
+
+<div class="operators-page">
+
+  <!-- Encabezado -->
+  <div class="page-header">
+    <div>
+      <h1>Gestión de operadores</h1>
+      <p>Administra los operadores y sus cuentas de acceso al sistema.</p>
+    </div>
+
+    <button
+      type="button"
+      class="btn-primary"
+      (click)="open(false)"
+      [disabled]="loading()"
+    >
+      <svg lucideUserPlus></svg>
+      Registrar operador
+    </button>
+  </div>
+
+  <!-- Mensajes -->
+  @if (errorMessage()) {
+    <div class="alert alert-error" role="alert">
+      <span>{{ errorMessage() }}</span>
+      <button
+        type="button"
+        class="alert-close"
+        aria-label="Cerrar mensaje"
+        (click)="errorMessage.set('')"
+      >
+        <svg lucideX></svg>
+      </button>
+    </div>
+  }
+
+  @if (successMessage()) {
+    <div class="alert alert-success" role="status">
+      {{ successMessage() }}
+    </div>
+  }
+
+  <!-- Resumen -->
+  <div class="operators-summary">
+    <div class="summary-card">
+      <div class="summary-icon">
+        <svg lucideUserPlus></svg>
+      </div>
+
+      <div>
+        <span class="summary-label">Total de operadores</span>
+        <strong>{{ total() }}</strong>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabla -->
+  <section class="operators-card">
+
+    <div class="section-header">
+      <div>
+        <h2>Operadores registrados</h2>
+        <p>Información de los usuarios con acceso al sistema.</p>
+      </div>
+
+      <button
+        type="button"
+        class="btn-secondary"
+        (click)="load()"
+        [disabled]="loading()"
+      >
+        Actualizar
+      </button>
+    </div>
+
+    @if (loading()) {
+      <div class="loading-state">
+        <span class="loader"></span>
+        <p>Cargando operadores...</p>
+      </div>
+    } @else {
+
+      @if (operators().length > 0) {
+        <div class="table-container">
+          <table class="operators-table">
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>Usuario</th>
+                <th>Teléfono</th>
+                <th>Rol</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              @for (row of rows(); track operators()[$index].id) {
+                <tr>
+                  <td>
+                    <div class="operator-name">
+                      <div class="operator-avatar">
+                        {{ row[0].charAt(0).toUpperCase() }}
+                      </div>
+                      <span>{{ row[0] }}</span>
+                    </div>
+                  </td>
+
+                  <td>
+                    <span class="username">{{ row[1] }}</span>
+                  </td>
+
+                  <td>{{ row[2] }}</td>
+
+                  <td>
+                    <span
+                      class="role-badge"
+                      [class.admin]="row[3] === 'Administrador'"
+                    >
+                      {{ row[3] }}
+                    </span>
+                  </td>
+
+                  <td>
+                    <button
+                      type="button"
+                      class="btn-icon"
+                      title="Editar operador"
+                      aria-label="Editar operador"
+                      (click)="open(true)"
+                    >
+                      <svg lucideEdit3></svg>
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      } @else {
+        <div class="empty-state">
+          <svg lucideUserPlus></svg>
+          <h3>No hay operadores registrados</h3>
+          <p>Registra un operador para que pueda acceder al sistema.</p>
+
+          <button
+            type="button"
+            class="btn-primary"
+            (click)="open(false)"
+          >
+            Registrar operador
+          </button>
+        </div>
+      }
+    }
+  </section>
+
+  <!-- Modal de registro / edición -->
+  @if (formOpen()) {
+    <div
+      class="modal-overlay"
+      (click)="closeForm()"
+    >
+      <section
+        class="operator-modal"
+        role="dialog"
+        aria-modal="true"
+        [attr.aria-label]="editing() ? 'Editar operador' : 'Registrar operador'"
+        (click)="$event.stopPropagation()"
+      >
+
+        <!-- Encabezado del modal -->
+        <div class="modal-header">
+          <div>
+            <h2>
+              {{ editing() ? 'Editar operador' : 'Registrar operador' }}
+            </h2>
+
+            <p>
+              {{
+                editing()
+                  ? 'Actualiza la información del operador y su cuenta.'
+                  : 'Completa los datos para crear un nuevo operador.'
+              }}
+            </p>
+          </div>
+
+          <button
+            type="button"
+            class="btn-close"
+            aria-label="Cerrar formulario"
+            (click)="closeForm()"
+            [disabled]="saving()"
+          >
+            <svg lucideX></svg>
+          </button>
+        </div>
+
+        <!-- Formulario -->
+        <form
+          class="operator-form"
+          (ngSubmit)="save()"
+          novalidate
+        >
+
+          <div class="form-section">
+            <h3>Información personal</h3>
+
+            <div class="form-group">
+              <label for="operator-name">Nombre completo</label>
+
+              <input
+                id="operator-name"
+                type="text"
+                name="name"
+                [(ngModel)]="name"
+                placeholder="Ej. Carolina Ramírez"
+                autocomplete="name"
+                [class.invalid]="submitted() && !name.trim()"
+              />
+
+              @if (submitted() && !name.trim()) {
+                <small class="field-error">
+                  El nombre es obligatorio.
+                </small>
+              }
+            </div>
+
+            <div class="form-group">
+              <label for="operator-phone">Teléfono</label>
+
+              <input
+                id="operator-phone"
+                type="tel"
+                name="phone"
+                [(ngModel)]="phone"
+                placeholder="Ej. 300 456 7812"
+                autocomplete="tel"
+                [class.invalid]="submitted() && !phone.trim()"
+              />
+
+              @if (submitted() && !phone.trim()) {
+                <small class="field-error">
+                  El teléfono es obligatorio.
+                </small>
+              }
+            </div>
+          </div>
+
+          <div class="form-section">
+            <h3>Cuenta de acceso</h3>
+
+            <div class="form-group">
+              <label for="operator-username">Nombre de usuario</label>
+
+              <input
+                id="operator-username"
+                type="text"
+                name="username"
+                [(ngModel)]="username"
+                placeholder="Ej. cramirez"
+                autocomplete="username"
+                [class.invalid]="submitted() && !username.trim()"
+              />
+
+              @if (submitted() && !username.trim()) {
+                <small class="field-error">
+                  El nombre de usuario es obligatorio.
+                </small>
+              }
+            </div>
+
+            <div class="form-group">
+              <label for="operator-password">
+                Contraseña
+
+                @if (editing()) {
+                  <span class="optional-label">(Opcional)</span>
+                }
+              </label>
+
+              <input
+                id="operator-password"
+                type="password"
+                name="password"
+                [(ngModel)]="password"
+                [placeholder]="
+                  editing()
+                    ? 'Dejar vacío para conservar la actual'
+                    : 'Mínimo 8 caracteres'
+                "
+                [autocomplete]="editing() ? 'new-password' : 'new-password'"
+                [class.invalid]="
+                  submitted() &&
+                  (
+                    (!editing() && password.length < 8) ||
+                    (editing() && password.length > 0 && password.length < 8)
+                  )
+                "
+              />
+
+              @if (
+                submitted() &&
+                ((!editing() && password.length < 8) ||
+                (editing() && password.length > 0 && password.length < 8))
+              ) {
+                <small class="field-error">
+                  La contraseña debe tener al menos 8 caracteres.
+                </small>
+              }
+
+              @if (editing()) {
+                <small class="field-hint">
+                  Si no deseas cambiar la contraseña, deja este campo vacío.
+                </small>
+              }
+            </div>
+
+            <div class="form-group">
+              <label for="operator-role">Rol del usuario</label>
+
+              <input
+                id="operator-role"
+                type="text"
+                value="Operador"
+                disabled
+              />
+
+              <small class="field-hint">
+                Los operadores tienen permisos de acceso correspondientes
+                a su función dentro del parqueadero.
+              </small>
+            </div>
+          </div>
+
+          <!-- Error dentro del formulario -->
+          @if (errorMessage()) {
+            <div class="alert alert-error" role="alert">
+              {{ errorMessage() }}
+            </div>
+          }
+
+          <!-- Acciones -->
+          <div class="modal-actions">
+            <button
+              type="button"
+              class="btn-secondary"
+              (click)="closeForm()"
+              [disabled]="saving()"
+            >
+              Cancelar
+            </button>
+
+            <button
+              type="submit"
+              class="btn-primary"
+              [disabled]="saving()"
+            >
+              @if (saving()) {
+                <span class="loader loader-small"></span>
+                Guardando...
+              } @else {
+                {{
+                  editing()
+                    ? 'Guardar cambios'
+                    : 'Registrar operador'
+                }}
+              }
+            </button>
+          </div>
+
+        </form>
+      </section>
+    </div>
+  }
+
+</div>

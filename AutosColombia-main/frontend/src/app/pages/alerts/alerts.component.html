@@ -1,11 +1,359 @@
-<div class="demo-notice">Flujo administrativo · El Operador reporta y el Administrador revisa, corrige y atiende.</div>
-@if (attended()) { <div class="success-message"><svg lucideCheck></svg> Alerta atendida correctamente.</div> }
-@if (!detail()) {
-<section class="card table-card management"><div class="section-head"><div><h3>Alertas de vehículos</h3><p>Revisa los errores reportados por los operadores.</p></div><app-status-badge tone="red">6 pendientes</app-status-badge></div>
-<div class="alert-filters"><label class="field"><span>Estado</span><select><option>Todos</option><option>Pendiente</option><option>En revisión</option><option>Atendida</option></select></label><label class="field"><span>Fecha</span><input type="date" /></label><label class="field"><span>Vehículo</span><input placeholder="Placa" /></label><label class="field"><span>Operador</span><select><option>Todos</option><option>Laura Gómez</option></select></label><button class="button"><svg lucideFilter></svg> Filtrar</button></div>
-<div class="table-wrap"><table><thead><tr><th>ID</th><th>Vehículo/placa</th><th>Reportado por</th><th>Fecha y hora</th><th>Descripción</th><th>Estado</th><th>Acción</th></tr></thead><tbody>@for (row of rows; track row[0]) { <tr [class.pending-row]="row[5] === 'Pendiente'"><td><b>{{ row[0] }}</b></td><td><b class="plate">{{ row[1] }}</b></td><td>{{ row[2] }}</td><td>{{ row[3] }}</td><td class="description-cell">{{ row[4] }}</td><td><app-status-badge [tone]="tone(row[5])">{{ row[5] }}</app-status-badge></td><td><button class="text-button" (click)="detail.set(true)">Revisar</button></td></tr> }</tbody></table></div></section>
-} @else {
-<div class="detail-toolbar"><button class="text-button" (click)="detail.set(false)"><svg lucideArrowLeft></svg> Volver a alertas</button><app-status-badge tone="red">Pendiente</app-status-badge></div>
-<div class="alert-detail-grid"><section class="card detail-card"><div class="section-head"><div><h3>Información de la alerta</h3><p>AL-024 · Reporte del Operador</p></div><span class="detail-icon warning"><svg lucideTriangleAlert></svg></span></div><dl class="detail-list"><div><dt>Vehículo</dt><dd>Renault Duster 2022</dd></div><div><dt>Placa</dt><dd class="plate">KLM482</dd></div><div><dt>Reportado por</dt><dd>Laura Gómez · Operador</dd></div><div><dt>Fecha y hora</dt><dd>04/11/2026 · 09:12</dd></div><div class="wide"><dt>Descripción del error</dt><dd>El color registrado no coincide. El vehículo es azul oscuro, no gris.</dd></div><div><dt>Estado</dt><dd><app-status-badge tone="red">Pendiente</app-status-badge></dd></div></dl></section>
-<section class="card detail-card"><div class="section-head"><div><h3>Información actual del vehículo</h3><p>Edita únicamente los datos que verificaste.</p></div></div><div class="form-grid vehicle-edit"><label class="field"><span>Placa</span><input value="KLM482" disabled /></label><label class="field"><span>Marca</span><input [(ngModel)]="brand" /></label><label class="field"><span>Modelo</span><input [(ngModel)]="model" /></label><label class="field"><span>Color</span><input [(ngModel)]="color" /></label><label class="field"><span>Tipo</span><select [(ngModel)]="type"><option>Camioneta</option><option>Automóvil</option><option>Moto</option></select></label></div><div class="detail-actions"><button class="button secondary" (click)="detail.set(false)">Cancelar</button><button class="button secondary">Guardar cambios</button><button class="button" (click)="attended.set(true); detail.set(false)">Marcar como atendida</button></div></section></div>
-}
+
+<div class="alerts-page">
+
+  @if (errorMessage()) {
+    <div class="alert-message error" role="alert">
+      {{ errorMessage() }}
+    </div>
+  }
+
+  @if (successMessage()) {
+    <div class="alert-message success" role="status">
+      {{ successMessage() }}
+    </div>
+  }
+
+  @if (!detail()) {
+    <div class="welcome">
+      <div>
+        <p class="eyebrow">Gestión administrativa</p>
+        <h2>Alertas</h2>
+        <p>
+          Revisa los reportes de los operadores, corrige los datos
+          de los vehículos y atiende las alertas pendientes.
+        </p>
+      </div>
+    </div>
+
+    <div class="alert-info">
+      <svg lucideTriangleAlert></svg>
+      <span>
+        El operador reporta la inconsistencia y el administrador
+        revisa, corrige y atiende la alerta.
+      </span>
+    </div>
+
+    <section class="filters">
+    <div class="filters-header">
+        <div>
+            <h3>Filtros</h3>
+            <p>Busca alertas según sus datos.</p>
+        </div>
+        <svg lucideFilter></svg>
+    </div>
+
+      <div class="filters-grid">
+        <label>
+          Estado
+          <select [(ngModel)]="estado">
+            <option value="">Todos</option>
+            <option value="PENDIENTE">Pendiente</option>
+            <option value="ATENDIDA">Atendida</option>
+          </select>
+        </label>
+
+        <label>
+          Fecha
+          <input
+            type="date"
+            [(ngModel)]="fecha"
+          />
+        </label>
+
+        <label>
+          Placa
+          <input
+            type="text"
+            placeholder="Ej. ABC123"
+            maxlength="6"
+            [(ngModel)]="placa"
+          />
+        </label>
+
+        <label>
+          Operador
+          <select [(ngModel)]="operadorId">
+            <option value="">Todos</option>
+            @for (operator of operators(); track operator.id) {
+              <option [value]="operator.id">
+                {{ operator.nombre }}
+              </option>
+            }
+          </select>
+        </label>
+      </div>
+
+      <div class="filter-actions">
+        <button
+          type="button"
+          class="button"
+          (click)="applyFilters()"
+          [disabled]="loading()"
+        >
+          Aplicar filtros
+        </button>
+
+        <button
+          type="button"
+          class="button secondary"
+          (click)="clearFilters()"
+          [disabled]="loading()"
+        >
+          Limpiar
+        </button>
+      </div>
+    </section>
+
+    <section class="alerts-list">
+      <div class="list-header">
+        <div>
+          <h3>Reportes registrados</h3>
+          <p>{{ total() }} alertas encontradas</p>
+        </div>
+
+        <app-status-badge tone="red">
+          {{ alerts().filter(a => a.estado === 'PENDIENTE').length }}
+          pendientes en esta página
+        </app-status-badge>
+      </div>
+
+      @if (loading()) {
+        <div class="empty-state">
+          Cargando alertas...
+        </div>
+      } @else if (rows().length === 0) {
+        <div class="empty-state">
+          No se encontraron alertas con los filtros seleccionados.
+        </div>
+      } @else {
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Reporte</th>
+                <th>Placa</th>
+                <th>Operador</th>
+                <th>Fecha</th>
+                <th>Descripción</th>
+                <th>Estado</th>
+                <th>Acción</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              @for (row of rows(); track row.id) {
+                <tr>
+                  <td>{{ row.code }}</td>
+                  <td>{{ row.plate }}</td>
+                  <td>{{ row.operator }}</td>
+                  <td>{{ row.date }}</td>
+                  <td>{{ row.description }}</td>
+                  <td>
+                    <app-status-badge [tone]="tone(row.state)">
+                      {{ row.status }}
+                    </app-status-badge>
+                  </td>
+                  <td>
+                    <button
+                      type="button"
+                      class="button small"
+                      (click)="openDetail(row.id)"
+                    >
+                      Revisar
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+
+      <div class="pagination">
+        <button
+          type="button"
+          class="button secondary"
+          (click)="previousPage()"
+          [disabled]="offset() === 0 || loading()"
+        >
+          Anterior
+        </button>
+
+        <span>
+          {{ total() === 0 ? 0 : offset() + 1 }} -
+          {{ total() === 0 ? 0 : offset() + alerts().length }}
+          de {{ total() }}
+        </span>
+
+        <button
+          type="button"
+          class="button secondary"
+          (click)="nextPage()"
+          [disabled]="offset() + limit >= total() || loading()"
+        >
+          Siguiente
+        </button>
+      </div>
+    </section>
+
+  } @else if (selectedAlert(); as alerta) {
+
+    <div class="detail-header">
+      <button
+        type="button"
+        class="button secondary"
+        (click)="closeDetail()"
+      >
+        <svg lucideArrowLeft></svg>
+        Volver a alertas
+      </button>
+
+      <div>
+        <p class="eyebrow">Detalle del reporte</p>
+        <h2>{{ formatId(alerta.id) }}</h2>
+      </div>
+
+      <app-status-badge [tone]="tone(alerta.estado)">
+        {{ statusLabel(alerta.estado) }}
+      </app-status-badge>
+    </div>
+
+    <section class="detail-card">
+      <div class="detail-section">
+        <h3>Información del reporte</h3>
+
+        <div class="detail-grid">
+          <div>
+            <span>Placa</span>
+            <strong>{{ alerta.placa }}</strong>
+          </div>
+
+          <div>
+            <span>Operador que reportó</span>
+            <strong>{{ alerta.operador }}</strong>
+          </div>
+
+          <div>
+            <span>Fecha del reporte</span>
+            <strong>{{ formatDate(alerta.fecha_hora) }}</strong>
+          </div>
+
+          <div>
+            <span>Descripción</span>
+            <strong>{{ alerta.descripcion }}</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="detail-section">
+        <h3>Datos del vehículo</h3>
+        <p>
+          Puedes corregir los datos del vehículo asociados a
+          esta alerta.
+        </p>
+
+        <div class="vehicle-form">
+          <label>
+            Marca
+            <input
+              type="text"
+              [(ngModel)]="brand"
+              [disabled]="alerta.estado === 'ATENDIDA'"
+            />
+          </label>
+
+          <label>
+            Modelo (año)
+            <input
+              type="number"
+              min="1"
+              max="9999"
+              step="1"
+              [(ngModel)]="model"
+              [disabled]="alerta.estado === 'ATENDIDA'"
+            />
+          </label>
+
+          <label>
+            Color
+            <input
+              type="text"
+              [(ngModel)]="color"
+              [disabled]="alerta.estado === 'ATENDIDA'"
+            />
+          </label>
+
+          <label>
+            Tipo de vehículo
+            <select
+              [(ngModel)]="type"
+              [disabled]="alerta.estado === 'ATENDIDA'"
+            >
+              <option value="MOTO">Moto</option>
+              <option value="AUTOMOVIL">Automóvil</option>
+              <option value="CAMIONETA">Camioneta</option>
+            </select>
+          </label>
+        </div>
+
+        @if (alerta.estado === 'PENDIENTE') {
+          <div class="detail-actions">
+            <button
+              type="button"
+              class="button secondary"
+              (click)="closeDetail()"
+            >
+              Cancelar
+            </button>
+
+            <button
+              type="button"
+              class="button"
+              (click)="saveChanges()"
+              [disabled]="saving()"
+            >
+              {{ saving() ? 'Guardando...' : 'Guardar cambios' }}
+            </button>
+          </div>
+        }
+      </div>
+
+      @if (alerta.estado === 'ATENDIDA') {
+        <div class="detail-section">
+          <h3>Atención de la alerta</h3>
+          <div class="detail-grid">
+            <div>
+              <span>Atendida por</span>
+              <strong>
+                {{ alerta.atendida_por_username || 'No disponible' }}
+              </strong>
+            </div>
+
+            <div>
+              <span>Fecha de atención</span>
+              <strong>
+                {{
+                  alerta.fecha_atencion
+                    ? formatDate(alerta.fecha_atencion)
+                    : 'No disponible'
+                }}
+              </strong>
+            </div>
+          </div>
+        </div>
+      } @else {
+        <div class="detail-actions">
+          <button
+            type="button"
+            class="button success"
+            (click)="attendAlert()"
+            [disabled]="attending()"
+          >
+            <svg lucideCheck></svg>
+            {{ attending() ? 'Atendiendo...' : 'Marcar como atendida' }}
+          </button>
+        </div>
+      }
+    </section>
+  }
+</div>

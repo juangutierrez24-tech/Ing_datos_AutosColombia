@@ -23,7 +23,6 @@ import { Operador } from '../../models/operador';
     LucideCar,
     LucideCheck,
     LucideSearch,
-    LucideX,
   ],
   templateUrl: './entry.component.html',
 })
