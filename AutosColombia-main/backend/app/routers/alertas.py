@@ -33,7 +33,7 @@ DatabaseSession = Annotated[
 
 OperatorUser = Annotated[
     Usuario,
-    Depends(require_roles("OPERADOR")),
+    Depends(require_roles("OPERADOR", "ADMINISTRADOR")),
 ]
 
 AdminUser = Annotated[

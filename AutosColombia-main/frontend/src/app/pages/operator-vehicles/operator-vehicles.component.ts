@@ -1,3 +1,4 @@
+
 import {
   Component,
   computed,
@@ -16,8 +17,10 @@ import {
 
 import {
   ErrorApi,
+  TIPOS_VEHICULO,
   TipoVehiculo,
   Vehiculo,
+  VehiculoCrear,
 } from "../../models/vehiculo";
 import { ApiService } from "../../services/api.service";
 import { AlertasService } from "../../services/alertas.service";
@@ -44,14 +47,19 @@ export class OperatorVehiclesComponent implements OnInit {
 
   readonly loading = signal(false);
   readonly sending = signal(false);
+  readonly savingVehicle = signal(false);
 
   readonly modalOpen = signal(false);
+  readonly registerModalOpen = signal(false);
   readonly sent = signal(false);
 
   readonly errorMessage = signal("");
   readonly successMessage = signal("");
+  readonly registerErrorMessage = signal("");
 
   readonly search = signal("");
+
+  readonly tiposVehiculo = TIPOS_VEHICULO;
 
   readonly filteredVehicles = computed(() => {
     const text = this.search().trim().toUpperCase();
@@ -68,8 +76,26 @@ export class OperatorVehiclesComponent implements OnInit {
   selected: Vehiculo | null = null;
   description = "";
 
+  newVehicle: {
+    placa: string;
+    marca: string;
+    modelo: number | null;
+    color: string;
+    tipo: TipoVehiculo;
+  } = this.emptyVehicleForm();
+
   ngOnInit(): void {
     this.loadVehicles();
+  }
+
+  private emptyVehicleForm() {
+    return {
+      placa: "",
+      marca: "",
+      modelo: null,
+      color: "",
+      tipo: "AUTOMOVIL" as TipoVehiculo,
+    };
   }
 
   loadVehicles(): void {
@@ -88,6 +114,94 @@ export class OperatorVehiclesComponent implements OnInit {
           this.getErrorMessage(
             error,
             "No fue posible cargar los vehículos.",
+          ),
+        );
+      },
+    });
+  }
+
+  openRegisterModal(): void {
+    this.newVehicle = this.emptyVehicleForm();
+    this.registerErrorMessage.set("");
+    this.registerModalOpen.set(true);
+  }
+
+  closeRegisterModal(): void {
+    if (this.savingVehicle()) {
+      return;
+    }
+
+    this.registerModalOpen.set(false);
+    this.registerErrorMessage.set("");
+    this.newVehicle = this.emptyVehicleForm();
+  }
+
+  saveVehicle(): void {
+    if (this.savingVehicle()) {
+      return;
+    }
+
+    const placa = this.newVehicle.placa.trim().toUpperCase();
+    const marca = this.newVehicle.marca.trim();
+    const color = this.newVehicle.color.trim();
+    const modelo = this.newVehicle.modelo;
+
+    this.registerErrorMessage.set("");
+
+    if (!placa || !marca || !color || modelo === null) {
+      this.registerErrorMessage.set(
+        "Todos los campos son obligatorios.",
+      );
+      return;
+    }
+
+    if (!/^[A-Z]{3}[0-9]{3}$/.test(placa)) {
+      this.registerErrorMessage.set(
+        "La placa debe tener 3 letras seguidas de 3 números. Ejemplo: ABC123.",
+      );
+      return;
+    }
+
+    if (
+      !Number.isInteger(modelo) ||
+      modelo < 1 ||
+      modelo > 9999
+    ) {
+      this.registerErrorMessage.set(
+        "El modelo debe ser un año entero entre 1 y 9999.",
+      );
+      return;
+    }
+
+    const data: VehiculoCrear = {
+      placa,
+      marca,
+      modelo,
+      color,
+      tipo: this.newVehicle.tipo,
+    };
+
+    this.savingVehicle.set(true);
+
+    this.api.create(data).subscribe({
+      next: () => {
+        this.savingVehicle.set(false);
+        this.registerModalOpen.set(false);
+        this.newVehicle = this.emptyVehicleForm();
+
+        this.successMessage.set(
+          "Vehículo registrado correctamente.",
+        );
+
+        this.loadVehicles();
+      },
+      error: (error) => {
+        this.savingVehicle.set(false);
+
+        this.registerErrorMessage.set(
+          this.getErrorMessage(
+            error,
+            "No fue posible registrar el vehículo.",
           ),
         );
       },

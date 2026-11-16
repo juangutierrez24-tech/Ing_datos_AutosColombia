@@ -31,6 +31,7 @@ import {
     LucideTriangleAlert,
   ],
   templateUrl: "./alerts.component.html",
+  styleUrl: "./alerts.component.css",
 })
 export class AlertsComponent implements OnInit {
   private readonly alertasService = inject(AlertasService);

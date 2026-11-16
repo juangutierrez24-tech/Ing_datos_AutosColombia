@@ -1,6 +1,7 @@
+
 <div class="demo-notice">
-  Vista del Operador · Puede consultar vehículos y reportar datos
-  incorrectos, pero no editarlos.
+  Vista del Operador · Puede registrar vehículos, consultar los existentes
+  y reportar datos incorrectos.
 </div>
 
 @if (successMessage()) {
@@ -22,12 +23,20 @@
     <div>
       <h3>Vehículos</h3>
       <p>
-        Consulta los vehículos registrados en el sistema.
+        Consulta y registra vehículos en el sistema.
         @if (!loading()) {
           <span>{{ total() }} registrados.</span>
         }
       </p>
     </div>
+
+    <button
+      class="button"
+      type="button"
+      (click)="openRegisterModal()"
+    >
+      + Registrar vehículo
+    </button>
   </div>
 
   <div class="filters">
@@ -115,6 +124,134 @@
   }
 </section>
 
+<!-- Modal para registrar vehículo -->
+@if (registerModalOpen()) {
+  <div class="modal-backdrop">
+    <section class="modal card alert-modal">
+
+      <button
+        class="modal-close"
+        type="button"
+        [disabled]="savingVehicle()"
+        (click)="closeRegisterModal()"
+      >
+        <svg lucideX></svg>
+      </button>
+
+      <div class="modal-title">
+        <span class="warning">
+          <svg lucideCar></svg>
+        </span>
+
+        <div>
+          <h3>Registrar vehículo</h3>
+          <p>
+            Completa los datos para registrar un nuevo vehículo.
+          </p>
+        </div>
+      </div>
+
+      @if (registerErrorMessage()) {
+        <div class="error-message">
+          <svg lucideTriangleAlert></svg>
+          {{ registerErrorMessage() }}
+        </div>
+      }
+
+      <label class="field">
+        <span>Placa *</span>
+        <input
+          type="text"
+          name="placa"
+          [(ngModel)]="newVehicle.placa"
+          placeholder="ABC123"
+          maxlength="6"
+          autocomplete="off"
+          [disabled]="savingVehicle()"
+        />
+        <small>3 letras seguidas de 3 números.</small>
+      </label>
+
+      <label class="field">
+        <span>Marca *</span>
+        <input
+          type="text"
+          name="marca"
+          [(ngModel)]="newVehicle.marca"
+          placeholder="Ejemplo: Chevrolet"
+          [disabled]="savingVehicle()"
+        />
+      </label>
+
+      <label class="field">
+        <span>Modelo (año) *</span>
+        <input
+          type="number"
+          name="modelo"
+          [(ngModel)]="newVehicle.modelo"
+          min="1"
+          max="9999"
+          step="1"
+          placeholder="Ejemplo: 2022"
+          [disabled]="savingVehicle()"
+        />
+      </label>
+
+      <label class="field">
+        <span>Color *</span>
+        <input
+          type="text"
+          name="color"
+          [(ngModel)]="newVehicle.color"
+          placeholder="Ejemplo: Negro"
+          [disabled]="savingVehicle()"
+        />
+      </label>
+
+      <label class="field">
+        <span>Tipo de vehículo *</span>
+        <select
+          name="tipo"
+          [(ngModel)]="newVehicle.tipo"
+          [disabled]="savingVehicle()"
+        >
+          @for (tipo of tiposVehiculo; track tipo) {
+            <option [value]="tipo">
+              {{ displayType(tipo) }}
+            </option>
+          }
+        </select>
+      </label>
+
+      <div class="modal-actions">
+        <button
+          class="button secondary"
+          type="button"
+          [disabled]="savingVehicle()"
+          (click)="closeRegisterModal()"
+        >
+          Cancelar
+        </button>
+
+        <button
+          class="button"
+          type="button"
+          [disabled]="savingVehicle()"
+          (click)="saveVehicle()"
+        >
+          @if (savingVehicle()) {
+            Registrando...
+          } @else {
+            Registrar vehículo
+          }
+        </button>
+      </div>
+
+    </section>
+  </div>
+}
+
+<!-- Modal para reportar error -->
 @if (modalOpen() && selected) {
   <div class="modal-backdrop">
     <section class="modal card alert-modal">
