@@ -13,7 +13,6 @@ import { LoginHistoryComponent } from "./pages/login-history/login-history.compo
 import { OperatorVehiclesComponent } from "./pages/operator-vehicles/operator-vehicles.component";
 import { AlertsComponent } from "./pages/alerts/alerts.component";
 import { CellsComponent } from "./pages/cells/cells.component";
-import { RoleDashboardComponent } from "./pages/role-dashboard/role-dashboard.component";
 
 import { authGuard } from "./core/guards/auth.guard";
 import { roleGuard } from "./core/guards/role.guard";
