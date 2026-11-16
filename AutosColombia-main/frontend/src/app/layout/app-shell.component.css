@@ -1,0 +1,131 @@
+/* El encabezado debe permitir elementos flotantes */
+header {
+  position: relative;
+  z-index: 50;
+  overflow: visible;
+}
+
+.header-right {
+  position: relative;
+  overflow: visible;
+}
+
+/* Contenedor del botón */
+.notification-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+/* Botón de notificaciones */
+.bell {
+  position: relative;
+  z-index: 52;
+  cursor: pointer;
+}
+
+/* Ventana flotante */
+.notification-panel {
+  position: absolute;
+  top: calc(100% + 12px);
+  right: 0;
+  width: 340px;
+  max-width: calc(100vw - 32px);
+
+  background: #ffffff;
+  color: #1f2937;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.18);
+
+  z-index: 1000;
+  overflow: hidden;
+}
+
+/* Encabezado de la ventana */
+.notification-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 18px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.notification-header > div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.notification-header b {
+  font-size: 14px;
+}
+
+.notification-header small {
+  color: #6b7280;
+  font-size: 12px;
+}
+
+.notification-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.notification-close:hover {
+  background: #f3f4f6;
+}
+
+/* Contenido */
+.notification-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 28px 24px;
+  text-align: center;
+}
+
+.notification-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 46px;
+  margin-bottom: 14px;
+  border-radius: 50%;
+  background: #f3f4f6;
+}
+
+.notification-body b {
+  font-size: 14px;
+  margin-bottom: 7px;
+}
+
+.notification-body span {
+  max-width: 260px;
+  color: #6b7280;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+/* Enlace inferior */
+.notification-link {
+  display: block;
+  padding: 13px 18px;
+  border-top: 1px solid #e5e7eb;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.notification-link:hover {
+  background: #f8fafc;
+}

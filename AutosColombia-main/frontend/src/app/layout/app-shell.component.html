@@ -2,7 +2,10 @@
   @if (!isLogin()) {
     <aside class="sidebar" [class.open]="menuOpen()">
       <div class="brand">
-        <div><svg lucideCar></svg></div>
+        <div>
+          <svg lucideCar></svg>
+        </div>
+
         <span><b>Autos</b> Colombia</span>
 
         <button
@@ -20,7 +23,11 @@
             <span class="nav-group">{{ item.heading }}</span>
           }
 
-          <a [routerLink]="item.path" routerLinkActive="active">
+          <a
+            [routerLink]="item.path"
+            routerLinkActive="active"
+            (click)="menuOpen.set(false)"
+          >
             @switch (item.icon) {
               @case ("dashboard") {
                 <svg lucideLayoutDashboard></svg>
@@ -66,16 +73,7 @@
       </nav>
 
       <div class="sidebar-foot">
-        <div class="system-card">
-          <svg lucideShieldCheck></svg>
-
-          <div>
-            <b>Sistema operativo</b>
-            <span>Interfaz lista · Sin API conectada</span>
-          </div>
-        </div>
-
-        <small>Autos Colombia · Interfaz demostrativa</small>
+        <small>Autos Colombia</small>
       </div>
     </aside>
   }
@@ -99,28 +97,80 @@
         </div>
 
         <div class="header-right">
+          <!-- Fecha actual -->
           <div class="date">
             <svg lucideCalendarDays></svg>
-            <span>Lunes, 12 de mayo de 2025</span>
+            <span>{{ formattedDate() }}</span>
           </div>
 
           <app-status-badge>Sistema en línea</app-status-badge>
 
-          <button class="bell" aria-label="Notificaciones">
-            <svg lucideBell></svg>
-            <i></i>
-          </button>
+          <!-- Notificaciones -->
+          <div class="notification-wrapper">
+            <button
+              class="bell"
+              [class.active]="notificationsOpen()"
+              (click)="toggleNotifications()"
+              aria-label="Notificaciones"
+              [attr.aria-expanded]="notificationsOpen()"
+            >
+              <svg lucideBell></svg>
+              <i></i>
+            </button>
+
+            @if (notificationsOpen()) {
+              <div class="notification-panel">
+                <div class="notification-header">
+                  <div>
+                    <b>Notificaciones</b>
+                    <small>Centro de alertas</small>
+                  </div>
+
+                  <button
+                    type="button"
+                    class="notification-close"
+                    (click)="closeNotifications()"
+                    aria-label="Cerrar notificaciones"
+                  >
+                    <svg lucideX></svg>
+                  </button>
+                </div>
+
+                <div class="notification-body">
+                  <div class="notification-icon">
+                    <svg lucideBell></svg>
+                  </div>
+
+                  <b>No tienes notificaciones nuevas</b>
+
+                  <span>
+                    Las alertas y avisos importantes aparecerán aquí.
+                  </span>
+                </div>
+
+                <a
+                  class="notification-link"
+                  [routerLink]="
+                    role() === 'Administrador'
+                      ? '/admin/alertas'
+                      : '/operador/reportar-alerta'
+                  "
+                  (click)="closeNotifications()"
+                >
+                  Ver alertas
+                </a>
+              </div>
+            }
+          </div>
 
           <div class="profile">
             <span>
-              {{ role() === "Administrador" ? "AS" : "CR" }}
+              {{ getInitials(currentUser()?.nombre_operador) }}
             </span>
 
             <div>
               <b>
-                {{ role() === "Administrador"
-                  ? "Andrés Silva"
-                  : "Carolina Ramírez" }}
+                {{ currentUser()?.nombre_operador ?? "Usuario" }}
               </b>
 
               <small>{{ role() }}</small>

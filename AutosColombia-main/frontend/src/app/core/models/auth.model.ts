@@ -20,6 +20,7 @@ export interface UsuarioAutenticado {
   operador_id: number;
   username: string;
   rol: UserRole;
+  nombre_operador: string;
 }
 
 /**

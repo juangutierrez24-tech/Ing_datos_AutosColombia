@@ -1,7 +1,13 @@
 
 import { Component, computed, signal } from "@angular/core";
-import { NavigationEnd, Router, RouterLink, RouterLinkActive } from "@angular/router";
+import {
+  NavigationEnd,
+  Router,
+  RouterLink,
+  RouterLinkActive,
+} from "@angular/router";
 import { filter } from "rxjs";
+
 import {
   LucideBell,
   LucideCalendarDays,
@@ -14,12 +20,14 @@ import {
   LucideLogOut,
   LucideMenu,
   LucideSearch,
-  LucideShieldCheck,
+  LucideTriangleAlert,
   LucideUsersRound,
   LucideX,
-  LucideTriangleAlert,
 } from "@lucide/angular";
+
 import { StatusBadgeComponent } from "../shared/status-badge.component";
+import { AuthService } from "../core/services/auth.service";
+import { UsuarioAutenticado } from "../core/models/auth.model";
 
 type NavItem = {
   label: string;
@@ -46,19 +54,37 @@ type NavItem = {
     LucideLogOut,
     LucideMenu,
     LucideSearch,
-    LucideShieldCheck,
     LucideUsersRound,
     LucideX,
     LucideTriangleAlert,
   ],
   templateUrl: "./app-shell.component.html",
+  styleUrls: ["./app-shell.component.css"],
 })
 export class AppShellComponent {
   readonly menuOpen = signal(false);
+  readonly notificationsOpen = signal(false);
+
   readonly title = signal("Panel principal");
   readonly isLogin = signal(false);
 
-  readonly role = signal<"Administrador" | "Operador">("Operador");
+  readonly currentUser = signal<UsuarioAutenticado | null>(null);
+
+  readonly role = computed(() => {
+    const userRole = this.currentUser()?.rol;
+
+    if (userRole === "ADMINISTRADOR") {
+      return "Administrador";
+    }
+
+    if (userRole === "OPERADOR") {
+      return "Operador";
+    }
+
+    return "Usuario";
+  });
+
+  readonly currentDate = signal(new Date());
 
   readonly adminNav: NavItem[] = [
     {
@@ -71,8 +97,16 @@ export class AppShellComponent {
     { label: "Registrar entrada", path: "/admin/entrada", icon: "login" },
     { label: "Registrar salida", path: "/admin/salida", icon: "logout" },
     { label: "Vehículos dentro", path: "/admin/dentro", icon: "search" },
-    { label: "Historial de estancias", path: "/admin/historial", icon: "history" },
-    { label: "Reportar errores", path: "/admin/reportar-alerta", icon: "alert" },
+    {
+      label: "Historial de estancias",
+      path: "/admin/historial",
+      icon: "history",
+    },
+    {
+      label: "Reportar errores",
+      path: "/admin/reportar-alerta",
+      icon: "alert",
+    },
     {
       label: "Gestión de operadores",
       path: "/admin/operadores",
@@ -91,34 +125,48 @@ export class AppShellComponent {
     { label: "Registrar salida", path: "/operador/salida", icon: "logout" },
     { label: "Vehículos dentro", path: "/operador/dentro", icon: "search" },
     { label: "Historial", path: "/operador/historial", icon: "history" },
-    { label: "Reportar alerta", path: "/operador/reportar-alerta", icon: "alert" },
+    {
+      label: "Reportar alerta",
+      path: "/operador/reportar-alerta",
+      icon: "alert",
+    },
   ];
 
   readonly nav = computed(() =>
-    this.role() === "Administrador" ? this.adminNav : this.operatorNav
+    this.currentUser()?.rol === "ADMINISTRADOR"
+      ? this.adminNav
+      : this.operatorNav
   );
 
-  constructor(private readonly router: Router) {
-    // Reconocer la ruta inicial.
+  readonly formattedDate = computed(() =>
+    new Intl.DateTimeFormat("es-CO", {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+      timeZone: "America/Bogota",
+    }).format(this.currentDate())
+  );
+
+  constructor(
+    private readonly router: Router,
+    private readonly authService: AuthService,
+  ) {
     this.updateLayout(router.url);
 
-    // Actualizar la interfaz al cambiar de ruta.
     router.events
       .pipe(filter((event) => event instanceof NavigationEnd))
       .subscribe((event) => {
         this.updateLayout(event.urlAfterRedirects);
         this.menuOpen.set(false);
+        this.notificationsOpen.set(false);
       });
   }
 
   private updateLayout(url: string): void {
     this.isLogin.set(url.startsWith("/login"));
 
-    if (url.startsWith("/admin")) {
-      this.role.set("Administrador");
-    } else if (url.startsWith("/operador")) {
-      this.role.set("Operador");
-    }
+    this.currentUser.set(this.authService.getCurrentUser());
 
     this.title.set(
       this.router.routerState.snapshot.root.firstChild?.title ??
@@ -126,7 +174,29 @@ export class AppShellComponent {
     );
   }
 
+  getInitials(name: string | undefined): string {
+    if (!name?.trim()) {
+      return "US";
+    }
+
+    const words = name.trim().split(/\s+/);
+
+    return words
+      .slice(0, 2)
+      .map((word) => word.charAt(0).toUpperCase())
+      .join("");
+  }
+
+  toggleNotifications(): void {
+    this.notificationsOpen.update((open) => !open);
+  }
+
+  closeNotifications(): void {
+    this.notificationsOpen.set(false);
+  }
+
   logout(): void {
-    this.router.navigateByUrl("/login");
+    this.notificationsOpen.set(false);
+    this.authService.logout();
   }
 }

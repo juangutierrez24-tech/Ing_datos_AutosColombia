@@ -81,6 +81,7 @@ interface ErrorApi {
     LucideX,
   ],
   templateUrl: "./operators.component.html",
+  styleUrl: "./operators.component.css",
 })
 export class OperatorsComponent {
   private readonly http = inject(HttpClient);

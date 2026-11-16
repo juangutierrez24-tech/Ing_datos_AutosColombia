@@ -1,3 +1,4 @@
+
 """Servicios para la autenticación de usuarios."""
 
 from sqlalchemy import select
@@ -33,7 +34,6 @@ def authenticate_user(
             )
         )
 
-        # El mismo mensaje evita revelar si el username existe.
         if user is None or not verify_password(
             password,
             user.password_hash,
@@ -43,8 +43,6 @@ def authenticate_user(
                 "Usuario o contraseña incorrectos.",
             )
 
-        # Se genera el token antes del commit.
-        # No se devuelve hasta que el registro de login se guarde.
         access_token = create_access_token(str(user.id))
 
         login_record = RegistroLogin(usuario_id=user.id)
@@ -53,7 +51,13 @@ def authenticate_user(
 
         return {
             "access_token": access_token,
-            "usuario": user,
+            "usuario": {
+                "id": user.id,
+                "operador_id": user.operador_id,
+                "username": user.username,
+                "rol": user.rol,
+                "nombre_operador": user.operador.nombre,
+            },
         }
 
     except AuthError:
